@@ -48,7 +48,6 @@
     .muted{color:var(--text-light);font-size:12px}
     .loading{opacity:.6;pointer-events:none}
 
-    /* === FILTER CONTROLS === */
     .filter-section{
       margin-bottom:20px;
       padding:15px;
@@ -60,7 +59,6 @@
       margin-top:0;color:var(--primary-color);
     }
 
-    /* === TABLE STYLING === */
     .table-container {
       overflow-x: auto;
       margin-top: 20px;
@@ -96,7 +94,6 @@
       background-color: var(--pill);
     }
 
-    /* === SORTABLE HEADERS === */
     .sortable {
       cursor: pointer;
       user-select: none;
@@ -126,7 +123,6 @@
       opacity: 1;
     }
 
-    /* === COLUMN FILTERS === */
     .column-filter {
       display: block;
       width: 100%;
@@ -144,7 +140,6 @@
       box-shadow: 0 0 0 2px rgba(99, 171, 143, 0.2);
     }
 
-    /* === STATUS BADGES === */
     .status-badge {
       display: inline-block;
       padding: 3px 8px;
@@ -161,7 +156,6 @@
     .status-busy { background: #d1ecf1; color: #0c5460; }
     .status-idle { background: #e2e3e5; color: #383d41; }
 
-    /* === ACTION BUTTONS === */
     .action-buttons {
       display: flex;
       gap: 8px;
@@ -183,7 +177,6 @@
       background: #5a6268;
     }
 
-    /* === CHECKBOX DROPDOWN === */
     .checkbox-dropdown{
       position:relative;min-width:240px;width:100%
     }
@@ -236,7 +229,6 @@
       font-size:12px;color:var(--text-light);display:flex;justify-content:space-between
     }
 
-    /* === STATS BAR === */
     .stats-bar {
       display: flex;
       gap: 20px;
@@ -265,7 +257,6 @@
       color: var(--text-light);
     }
 
-    /* === PROGRESS BAR === */
     .progress-container {
       margin: 20px 0;
       background: var(--light-bg);
@@ -296,7 +287,6 @@
       color: var(--text-light);
     }
 
-    /* === RATE LIMIT INFO === */
     .rate-limit-info {
       background: var(--warning);
       color: #856404;
@@ -307,7 +297,6 @@
       display: none;
     }
 
-    /* === RESPONSIVE === */
     @media (max-width: 1200px) {
       .controls {
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -347,7 +336,6 @@
       border:1px solid #bee5eb;border-radius:4px;background:#d1ecf1;
     }
     
-    /* === LOADING OVERLAY === */
     .loading-overlay {
       position: fixed;
       top: 0;
@@ -383,7 +371,6 @@
     <div class="loading">Authenticating with PureCloud...</div>
   </div>
 
-  <!-- Loading Overlay -->
   <div id="loadingOverlay" class="loading-overlay">
     <div class="loading-spinner"></div>
   </div>
@@ -534,7 +521,6 @@
   </div>
 
   <script>
-    /********* OAuth - IDENTICAL TO YOUR OTHER APP *********/
     const clientId = 'fe305808-b368-4547-8af9-325d28d552bb';
     const redirectUri = 'https://gmcglynn88.github.io/profiles/';
     const oauthUrl =
@@ -545,11 +531,9 @@
     let availableTeams = [];
     let availableManagementUnits = [];
     
-    // Rate limiting
     let rateLimitRemaining = 100;
     let rateLimitResetTime = Date.now() + 60000;
     
-    // Table state
     let currentPage = 1;
     let pageSize = 50;
     let sortColumn = 'name';
@@ -558,12 +542,10 @@
     let globalSearch = '';
     let filteredUsers = [];
     
-    // Pagination tracking for API calls
     const MAX_PAGE_SIZE = 100;
     const REQUEST_DELAY = 200;
     let isFetching = false;
 
-    /********* AUTHENTICATION - IDENTICAL TO YOUR OTHER APP *********/
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);
       const params = new URLSearchParams(hash);
@@ -594,7 +576,6 @@
       };
     }
 
-    /********* RATE LIMIT HANDLING *********/
     function updateRateLimitInfo(headers) {
       if (headers) {
         const remaining = headers.get('RateLimit-Remaining');
@@ -623,7 +604,6 @@
     }
 
     async function rateLimitedFetch(url, options = {}) {
-      // Check if we're near rate limit
       if (rateLimitRemaining < 5) {
         const waitTime = rateLimitResetTime - Date.now();
         if (waitTime > 0) {
@@ -632,7 +612,6 @@
         }
       }
       
-      // Add delay between requests
       if (isFetching) {
         await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY));
       }
@@ -642,15 +621,14 @@
         headers: { ...authHeaders(), ...options.headers }
       });
       
-      // Update rate limit info from response headers
       updateRateLimitInfo(response.headers);
       
       if (!response.ok) {
-        if (response.status === 429) { // Too Many Requests
+        if (response.status === 429) {
           const retryAfter = response.headers.get('Retry-After') || 60;
           showMessage(`Rate limited. Retrying in ${retryAfter} seconds...`, 'info');
           await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-          return rateLimitedFetch(url, options); // Retry
+          return rateLimitedFetch(url, options);
         }
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
@@ -658,7 +636,6 @@
       return response;
     }
 
-    /********* INITIAL LOAD *********/
     async function initializeApp() {
       try {
         showLoading(true);
@@ -679,7 +656,6 @@
       }
     }
 
-    /********* DATA LOADERS *********/
     async function fetchAllTeams() {
       let all = [], page = 1;
       const size = 100;
@@ -693,7 +669,6 @@
           all = all.concat(data.entities || []);
           page++;
           
-          // Check if we have all pages
           if (!data.entities || data.entities.length < size) break;
           
         } while (true);
@@ -718,7 +693,6 @@
           all = all.concat(data.entities || []);
           page++;
           
-          // Check if we have all pages
           if (!data.entities || data.entities.length < size) break;
           
         } while (true);
@@ -741,7 +715,6 @@
         document.getElementById('fetchUsers').disabled = true;
         document.getElementById('fetchUsers').textContent = 'Loading...';
         
-        // Show progress bar
         const progressContainer = document.getElementById('progressContainer');
         progressContainer.style.display = 'block';
         
@@ -777,7 +750,6 @@
         let totalUsers = 0;
         let loadedCount = 0;
         
-        // First, get total count
         try {
           const countRes = await rateLimitedFetch(
             `https://api.mypurecloud.ie/api/v2/users?pageSize=1&pageNumber=1`
@@ -787,10 +759,9 @@
           document.getElementById('progressTotal').textContent = totalUsers;
         } catch (error) {
           console.warn('Could not get total count:', error);
-          totalUsers = 1000; // Default estimate
+          totalUsers = 1000;
         }
 
-        // Fetch all users with pagination
         while (true) {
           try {
             document.getElementById('progressStatus').textContent = `Loading page ${page}...`;
@@ -802,7 +773,6 @@
             const data = await res.json();
             const users = data.entities || [];
             
-            // Filter out invalid users
             const validUsers = users.filter(u => 
               u.name && u.name.trim() && u.name !== 'Unknown User'
             );
@@ -810,32 +780,27 @@
             allUsers = allUsers.concat(validUsers);
             loadedCount += users.length;
             
-            // Update progress
             const progressPercent = Math.min(Math.round((loadedCount / totalUsers) * 100), 100);
             document.getElementById('progressFill').style.width = `${progressPercent}%`;
             document.getElementById('progressPercent').textContent = `${progressPercent}%`;
             document.getElementById('progressCount').textContent = loadedCount;
             
-            // Check if we have all users
             if (!data.pageCount || page >= data.pageCount || users.length < MAX_PAGE_SIZE) {
               break;
             }
             
             page++;
             
-            // Small delay to avoid rate limiting
             await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY));
             
           } catch (error) {
             console.error(`Error fetching page ${page}:`, error);
             
             if (error.message.includes('429')) {
-              // Rate limited, wait and retry this page
               await new Promise(resolve => setTimeout(resolve, 5000));
               continue;
             }
             
-            // For other errors, break and use what we have
             showMessage(`Stopped loading at page ${page}. ${error.message}`, 'warning');
             break;
           }
@@ -843,10 +808,8 @@
         
         availableUsers = allUsers;
         
-        // Hide progress bar
         progressContainer.style.display = 'none';
         
-        // Apply initial filters and render
         applyFilters();
         renderTable();
         
@@ -856,7 +819,6 @@
         console.error('Error fetching users:', error);
         showMessage(`Error loading users: ${error.message}`);
         
-        // Hide progress bar on error
         document.getElementById('progressContainer').style.display = 'none';
       } finally {
         isFetching = false;
@@ -865,11 +827,9 @@
       }
     }
 
-    /********* FILTERING LOGIC *********/
     function applyFilters() {
       filteredUsers = [...availableUsers];
       
-      // Apply global search
       if (globalSearch) {
         const search = globalSearch.toLowerCase();
         filteredUsers = filteredUsers.filter(user => {
@@ -886,7 +846,6 @@
         });
       }
       
-      // Apply column filters
       Object.keys(filters).forEach(column => {
         const filterValue = filters[column].toLowerCase().trim();
         if (!filterValue) return;
@@ -902,13 +861,11 @@
             );
           }
           
-          // Handle date filtering
           if (column.includes('date') || column.includes('Date')) {
             const dateStr = new Date(value).toISOString().split('T')[0];
             return dateStr.includes(filterValue);
           }
           
-          // Handle numeric filtering
           if (column.includes('Count') || column.includes('count')) {
             return String(value).includes(filterValue);
           }
@@ -917,7 +874,6 @@
         });
       });
       
-      // Apply status filter
       const statusFilter = document.getElementById('statusFilter').value;
       if (statusFilter) {
         filteredUsers = filteredUsers.filter(user => {
@@ -926,7 +882,6 @@
         });
       }
       
-      // Apply team filter
       const selectedTeams = teamDropdown.getSelectedValues();
       if (selectedTeams.length > 0) {
         filteredUsers = filteredUsers.filter(user => 
@@ -934,12 +889,9 @@
         );
       }
       
-      // Apply management unit filter
       const selectedMUs = managementUnitDropdown.getSelectedValues();
       if (selectedMUs.length > 0) {
         filteredUsers = filteredUsers.filter(user => {
-          // Note: This requires additional API calls to get MU memberships
-          // For now, we'll just filter by team as a proxy
           return user.team && selectedTeams.length > 0;
         });
       }
@@ -953,13 +905,11 @@
       }, obj);
     }
 
-    /********* SORTING LOGIC *********/
     function sortUsers(users) {
       return users.sort((a, b) => {
         let valA = getNestedValue(a, sortColumn);
         let valB = getNestedValue(b, sortColumn);
         
-        // Handle arrays (like skills)
         if (Array.isArray(valA)) {
           valA = valA.map(v => v.name || v).join(', ');
         }
@@ -967,19 +917,16 @@
           valB = valB.map(v => v.name || v).join(', ');
         }
         
-        // Handle dates
         if (sortColumn.includes('date') || sortColumn.includes('Date') || sortColumn === 'dateLastLogin') {
           valA = valA ? new Date(valA).getTime() : 0;
           valB = valB ? new Date(valB).getTime() : 0;
         }
         
-        // Handle numbers
         if (sortColumn.includes('Count') || sortColumn.includes('count')) {
           valA = Number(valA) || 0;
           valB = Number(valB) || 0;
         }
         
-        // Convert to string for comparison
         valA = String(valA || '').toLowerCase();
         valB = String(valB || '').toLowerCase();
         
@@ -991,7 +938,6 @@
       });
     }
 
-    /********* RENDER TABLE *********/
     function renderTable() {
       const tbody = document.querySelector('#usersTable tbody');
       const start = (currentPage - 1) * pageSize;
@@ -1017,7 +963,6 @@
         const skills = user.skills?.map(s => s.name).slice(0, 3).join(', ') || 'None';
         const convCount = user.conversationSummary?.totalConversationCount || 0;
         
-        // Determine status badge class
         let statusClass = 'status-offline';
         if (presence === 'Available') statusClass = 'status-online';
         else if (presence === 'Busy') statusClass = 'status-busy';
@@ -1059,7 +1004,6 @@
       document.getElementById('paginationInfo').textContent = 
         `Showing ${start + 1}-${Math.min(end, total)} of ${total} users`;
       
-      // Update pagination buttons
       document.getElementById('prevPage').disabled = currentPage === 1;
       document.getElementById('nextPage').disabled = end >= total;
     }
@@ -1073,7 +1017,6 @@
       });
     }
 
-    /********* STATS UPDATE *********/
     function updateStats() {
       const total = filteredUsers.length;
       const online = filteredUsers.filter(u => 
@@ -1099,7 +1042,6 @@
       document.getElementById('busyUsers').textContent = busy;
     }
 
-    /********* CHECKBOX DROPDOWNS *********/
     let teamDropdown, managementUnitDropdown;
 
     function createCheckboxDropdown(containerId, {placeholder, searchPlaceholder}) {
@@ -1249,12 +1191,9 @@
       managementUnitDropdown.setOptions(muOpts);
     }
 
-    /********* EVENT LISTENERS *********/
     function setupEventListeners() {
-      // Load users button
       document.getElementById('fetchUsers').addEventListener('click', fetchUsers);
       
-      // Refresh button
       document.getElementById('refreshData').addEventListener('click', async () => {
         if (availableUsers.length === 0) {
           await fetchUsers();
@@ -1265,20 +1204,16 @@
         showMessage('Data refreshed', 'success');
       });
       
-      // Export CSV
       document.getElementById('exportCSV').addEventListener('click', exportToCSV);
       
-      // Clear filters
       document.getElementById('clearFilters').addEventListener('click', clearFilters);
       
-      // Page size
       document.getElementById('pageSize').addEventListener('change', function() {
         pageSize = parseInt(this.value);
         currentPage = 1;
         renderTable();
       });
       
-      // Pagination
       document.getElementById('prevPage').addEventListener('click', () => {
         currentPage--;
         renderTable();
@@ -1289,7 +1224,6 @@
         renderTable();
       });
       
-      // Global search
       document.getElementById('globalSearch').addEventListener('input', function() {
         globalSearch = this.value;
         currentPage = 1;
@@ -1297,14 +1231,12 @@
         renderTable();
       });
       
-      // Status filter
       document.getElementById('statusFilter').addEventListener('change', function() {
         currentPage = 1;
         applyFilters();
         renderTable();
       });
       
-      // Column filters
       document.querySelectorAll('.column-filter').forEach(input => {
         input.addEventListener('input', function() {
           const column = this.dataset.column;
@@ -1319,7 +1251,6 @@
         });
       });
       
-      // Sortable headers
       document.querySelectorAll('.sortable').forEach(th => {
         th.addEventListener('click', function() {
           const column = this.dataset.column;
@@ -1336,7 +1267,6 @@
       });
     }
 
-    /********* EXPORT CSV *********/
     function exportToCSV() {
       if (filteredUsers.length === 0) {
         showMessage('No data to export', 'info');
@@ -1378,7 +1308,6 @@
       showMessage(`Exported ${filteredUsers.length} users to CSV`, 'success');
     }
 
-    /********* UTILITY FUNCTIONS *********/
     function clearFilters() {
       filters = {};
       globalSearch = '';
@@ -1404,7 +1333,6 @@
         return;
       }
       
-      // Create a formatted display of user details
       const details = `
         <div style="font-family: monospace; padding: 20px; max-width: 800px;">
           <h2>${user.name || 'Unknown User'}</h2>
@@ -1444,9 +1372,7 @@ ${JSON.stringify(user, null, 2)}
       document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
     }
 
-    // Initialize on load
     window.addEventListener('load', () => {
-      // Any additional initialization
     });
 
   </script>
