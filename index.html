@@ -3,11 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self' https://api.mypurecloud.ie https://login.mypurecloud.ie;
+                 script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.mypurecloud.ie;
+                 style-src 'self' 'unsafe-inline';
+                 connect-src 'self' https://api.mypurecloud.ie https://login.mypurecloud.ie;
+                 frame-src 'self' https://login.mypurecloud.ie;
+                 img-src 'self' data:;
+                 font-src 'self' data:;">
   <style>
     :root{
       --primary-color:#63AB8F; --secondary-color:#4A8C7D; --border-color:#DEE2E6;
       --light-bg:#F8F9FA; --card-bg:#FFFFFF; --text-color:#2C3E50; --text-light:#6C757D;
-      --pill:#e9f6f0; --filter-bg:#f0f7f3;
+      --pill:#e9f6f0; --filter-bg:#f0f7f3; --warning:#ffc107; --danger:#dc3545;
     }
 
     body{
@@ -159,12 +167,14 @@
     .status-offline { background: #f8d7da; color: #721c24; }
     .status-away { background: #fff3cd; color: #856404; }
     .status-busy { background: #d1ecf1; color: #0c5460; }
+    .status-idle { background: #e2e3e5; color: #383d41; }
 
     /* === ACTION BUTTONS === */
     .action-buttons {
       display: flex;
       gap: 8px;
       margin-top: 10px;
+      flex-wrap: wrap;
     }
 
     .action-btn {
@@ -175,7 +185,6 @@
 
     .export-btn {
       background: #6c757d;
-      margin-left: auto;
     }
 
     .export-btn:hover {
@@ -244,11 +253,13 @@
       border-radius: 6px;
       margin-bottom: 16px;
       font-size: 14px;
+      flex-wrap: wrap;
     }
 
     .stat-item {
       display: flex;
       flex-direction: column;
+      min-width: 80px;
     }
 
     .stat-value {
@@ -260,6 +271,48 @@
     .stat-label {
       font-size: 12px;
       color: var(--text-light);
+    }
+
+    /* === PROGRESS BAR === */
+    .progress-container {
+      margin: 20px 0;
+      background: var(--light-bg);
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary-color);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+
+    /* === RATE LIMIT INFO === */
+    .rate-limit-info {
+      background: var(--warning);
+      color: #856404;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
     }
 
     /* === RESPONSIVE === */
@@ -280,8 +333,11 @@
       }
       
       .stats-bar {
-        flex-wrap: wrap;
         gap: 10px;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
       }
     }
 
@@ -293,12 +349,51 @@
       color:#3c763d;padding:10px;margin:10px 0;
       border:1px solid #3c763d;border-radius:4px;background:#dff0d8;
     }
+    
+    .info-message{
+      color:#0c5460;padding:10px;margin:10px 0;
+      border:1px solid #bee5eb;border-radius:4px;background:#d1ecf1;
+    }
+    
+    /* === LOADING OVERLAY === */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid var(--light-bg);
+      border-top: 5px solid var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
 
   <div id="loginSection" class="card" style="text-align:center;margin:20px;">
     <div class="loading">Authenticating with PureCloud...</div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
   </div>
 
   <div id="appContent" style="display:none;">
@@ -322,10 +417,11 @@
           <label>Filter by Status</label>
           <select id="statusFilter">
             <option value="">All Statuses</option>
-            <option value="ONLINE">Online</option>
-            <option value="OFFLINE">Offline</option>
-            <option value="AWAY">Away</option>
+            <option value="AVAILABLE">Available</option>
             <option value="BUSY">Busy</option>
+            <option value="AWAY">Away</option>
+            <option value="OFFLINE">Offline</option>
+            <option value="IDLE">Idle</option>
           </select>
         </div>
         <div>
@@ -337,12 +433,30 @@
           <button id="fetchUsers" class="full-width-btn">Load Users</button>
         </div>
       </div>
+      
+      <div id="rateLimitInfo" class="rate-limit-info">
+        Rate limit: <span id="rateLimitRemaining">100</span> remaining, resets in <span id="rateLimitReset">60</span>s
+      </div>
     </div>
 
     <div class="card">
+      <div id="progressContainer" class="progress-container" style="display:none;">
+        <div class="progress-text">
+          <span id="progressStatus">Loading users...</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-text">
+          <span id="progressCount">0</span> of <span id="progressTotal">0</span> users loaded
+        </div>
+      </div>
+
       <div class="action-buttons">
         <button id="refreshData" class="action-btn">Refresh Data</button>
         <button id="exportCSV" class="action-btn export-btn">Export to CSV</button>
+        <button id="clearFilters" class="action-btn" style="background: var(--danger);">Clear Filters</button>
         <select id="pageSize" style="margin-left: auto; width: auto;">
           <option value="25">25 per page</option>
           <option value="50" selected>50 per page</option>
@@ -368,6 +482,10 @@
           <span class="stat-value" id="awayUsers">0</span>
           <span class="stat-label">Away</span>
         </div>
+        <div class="stat-item">
+          <span class="stat-value" id="busyUsers">0</span>
+          <span class="stat-label">Busy</span>
+        </div>
       </div>
 
       <div class="table-container">
@@ -377,11 +495,11 @@
               <th class="sortable" data-column="name">Name</th>
               <th class="sortable" data-column="routingStatus.status">Status</th>
               <th class="sortable" data-column="email">Email</th>
-              <th class="sortable" data-column="routingStatus.queues">Queues</th>
               <th class="sortable" data-column="team.name">Team</th>
               <th class="sortable" data-column="presence.presenceDefinition.systemPresence">Presence</th>
-              <th class="sortable" data-column="lastLogin">Last Login</th>
+              <th class="sortable" data-column="dateLastLogin">Last Login</th>
               <th class="sortable" data-column="skills">Skills</th>
+              <th class="sortable" data-column="conversationSummary.totalConversationCount">Conv. Count</th>
               <th>Actions</th>
             </tr>
             <tr class="filter-row">
@@ -391,9 +509,9 @@
                 <option value="IDLE">Idle</option>
                 <option value="INTERACTING">Interacting</option>
                 <option value="NOT_RESPONDING">Not Responding</option>
+                <option value="COMMUNICATING">Communicating</option>
               </select></td>
               <td><input type="text" class="column-filter" data-column="email" placeholder="Filter email..."></td>
-              <td><input type="text" class="column-filter" data-column="routingStatus.queues" placeholder="Filter queues..."></td>
               <td><input type="text" class="column-filter" data-column="team.name" placeholder="Filter team..."></td>
               <td><select class="column-filter" data-column="presence.presenceDefinition.systemPresence">
                 <option value="">All</option>
@@ -401,10 +519,12 @@
                 <option value="Busy">Busy</option>
                 <option value="Away">Away</option>
                 <option value="Offline">Offline</option>
+                <option value="Idle">Idle</option>
               </select></td>
-              <td><input type="text" class="column-filter" data-column="lastLogin" placeholder="Filter date..."></td>
+              <td><input type="text" class="column-filter" data-column="dateLastLogin" placeholder="YYYY-MM-DD..."></td>
               <td><input type="text" class="column-filter" data-column="skills" placeholder="Filter skills..."></td>
-              <td><button onclick="clearFilters()" style="font-size:12px;padding:6px 10px;">Clear Filters</button></td>
+              <td><input type="text" class="column-filter" data-column="conversationSummary.totalConversationCount" placeholder="Min count..."></td>
+              <td></td>
             </tr>
           </thead>
           <tbody></tbody>
@@ -424,7 +544,7 @@
   <script>
     /********* OAuth + Global Vars *********/
     const clientId = 'fe305808-b368-4547-8af9-325d28d552bb';
-    const redirectUri = 'https://gmcglynn88.github.io/profiles/';
+    const redirectUri = 'https://gmcglynn88.github.io/Queue-updater/';
     const oauthUrl =
       `https://login.mypurecloud.ie/oauth/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
@@ -432,7 +552,11 @@
     let availableUsers = [];
     let availableTeams = [];
     let availableManagementUnits = [];
-
+    
+    // Rate limiting
+    let rateLimitRemaining = 100;
+    let rateLimitResetTime = Date.now() + 60000; // Default 1 minute
+    
     // Table state
     let currentPage = 1;
     let pageSize = 50;
@@ -441,6 +565,11 @@
     let filters = {};
     let globalSearch = '';
     let filteredUsers = [];
+    
+    // Pagination tracking for API calls
+    const MAX_PAGE_SIZE = 100; // API max per page
+    const REQUEST_DELAY = 200; // Delay between requests in ms to avoid rate limits
+    let isFetching = false;
 
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);
@@ -458,20 +587,89 @@
       initializeApp(token);
     });
 
-    function showMessage(message, type='error'){
+    function showMessage(message, type = 'error') {
       const msgBox = document.getElementById('messageContainer');
       msgBox.innerHTML = `<div class="${type}-message">${message}</div>`;
       msgBox.style.display = 'block';
-      if (type === 'success') setTimeout(() => (msgBox.style.display='none'), 5000);
+      if (type === 'success') setTimeout(() => (msgBox.style.display = 'none'), 5000);
     }
 
-    function authHeaders(){
-      return { Authorization:`Bearer ${token}`, "Content-Type":"application/json" };
+    function authHeaders() {
+      return { 
+        Authorization: `Bearer ${token}`, 
+        "Content-Type": "application/json" 
+      };
+    }
+
+    /********* RATE LIMIT HANDLING *********/
+    function updateRateLimitInfo(headers) {
+      if (headers) {
+        const remaining = headers.get('RateLimit-Remaining');
+        const reset = headers.get('RateLimit-Reset');
+        
+        if (remaining !== null) {
+          rateLimitRemaining = parseInt(remaining);
+          document.getElementById('rateLimitRemaining').textContent = remaining;
+        }
+        
+        if (reset !== null) {
+          const resetSeconds = parseInt(reset);
+          rateLimitResetTime = Date.now() + (resetSeconds * 1000);
+          document.getElementById('rateLimitReset').textContent = resetSeconds;
+          
+          // Show warning if rate limit is low
+          if (rateLimitRemaining < 20) {
+            document.getElementById('rateLimitInfo').style.display = 'block';
+            document.getElementById('rateLimitInfo').style.background = 'var(--warning)';
+          } else if (rateLimitRemaining < 50) {
+            document.getElementById('rateLimitInfo').style.display = 'block';
+          } else {
+            document.getElementById('rateLimitInfo').style.display = 'none';
+          }
+        }
+      }
+    }
+
+    async function rateLimitedFetch(url, options = {}) {
+      // Check if we're near rate limit
+      if (rateLimitRemaining < 5) {
+        const waitTime = rateLimitResetTime - Date.now();
+        if (waitTime > 0) {
+          showMessage(`Rate limit reached. Waiting ${Math.ceil(waitTime / 1000)} seconds...`, 'info');
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+      
+      // Add delay between requests
+      if (isFetching) {
+        await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY));
+      }
+      
+      const response = await fetch(url, {
+        ...options,
+        headers: { ...authHeaders(), ...options.headers }
+      });
+      
+      // Update rate limit info from response headers
+      updateRateLimitInfo(response.headers);
+      
+      if (!response.ok) {
+        if (response.status === 429) { // Too Many Requests
+          const retryAfter = response.headers.get('Retry-After') || 60;
+          showMessage(`Rate limited. Retrying in ${retryAfter} seconds...`, 'info');
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+          return rateLimitedFetch(url, options); // Retry
+        }
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+      
+      return response;
     }
 
     /********* INITIAL LOAD *********/
-    async function initializeApp(){
+    async function initializeApp() {
       try {
+        showLoading(true);
         await Promise.all([
           fetchAllTeams(),
           fetchAllManagementUnits()
@@ -480,50 +678,80 @@
         createDropdowns();
         populateDropdownOptions();
         setupEventListeners();
+        showLoading(false);
 
-        // Load initial data
-        await fetchUsers();
-
-      } catch (e){
+      } catch (e) {
         console.error(e);
         showMessage("Error initialising. Redirecting...");
-        setTimeout(()=> window.location.href = oauthUrl, 2000);
+        setTimeout(() => window.location.href = oauthUrl, 2000);
       }
     }
 
     /********* DATA LOADERS *********/
-    async function fetchAllTeams(){
-      let all=[], page=1, size=100, total=0;
-      do{
-        const res = await fetch(
-          `https://api.mypurecloud.ie/api/v2/teams?pageNumber=${page}&pageSize=${size}`,
-          {headers:authHeaders()}
-        );
-        const data = await res.json();
-        all = all.concat(data.entities||[]);
-        total = data.total||0; page++;
-      } while(all.length < total);
-      availableTeams = all;
-    }
-
-    async function fetchAllManagementUnits(){
-      let all=[], page=1, size=100, total=0;
-      do{
-        const res = await fetch(
-          `https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits?pageNumber=${page}&pageSize=${size}`,
-          {headers:authHeaders()}
-        );
-        const data = await res.json();
-        all = all.concat(data.entities||[]);
-        total = data.total||0; page++;
-      } while(all.length < total);
-      availableManagementUnits = all;
-    }
-
-    async function fetchUsers(){
+    async function fetchAllTeams() {
+      let all = [], page = 1;
+      const size = 100;
+      
       try {
+        do {
+          const res = await rateLimitedFetch(
+            `https://api.mypurecloud.ie/api/v2/teams?pageNumber=${page}&pageSize=${size}`
+          );
+          const data = await res.json();
+          all = all.concat(data.entities || []);
+          page++;
+          
+          // Check if we have all pages
+          if (!data.entities || data.entities.length < size) break;
+          
+        } while (true);
+        
+        availableTeams = all;
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+        showMessage('Error loading teams');
+      }
+    }
+
+    async function fetchAllManagementUnits() {
+      let all = [], page = 1;
+      const size = 100;
+      
+      try {
+        do {
+          const res = await rateLimitedFetch(
+            `https://api.mypurecloud.ie/api/v2/workforcemanagement/managementunits?pageNumber=${page}&pageSize=${size}`
+          );
+          const data = await res.json();
+          all = all.concat(data.entities || []);
+          page++;
+          
+          // Check if we have all pages
+          if (!data.entities || data.entities.length < size) break;
+          
+        } while (true);
+        
+        availableManagementUnits = all;
+      } catch (error) {
+        console.error('Error fetching management units:', error);
+        showMessage('Error loading management units');
+      }
+    }
+
+    async function fetchUsers() {
+      if (isFetching) {
+        showMessage('Already fetching data, please wait...', 'info');
+        return;
+      }
+      
+      try {
+        isFetching = true;
         document.getElementById('fetchUsers').disabled = true;
         document.getElementById('fetchUsers').textContent = 'Loading...';
+        
+        // Show progress bar
+        const progressContainer = document.getElementById('progressContainer');
+        progressContainer.style.display = 'block';
         
         const expandFields = [
           'routingStatus',
@@ -554,31 +782,77 @@
 
         let allUsers = [];
         let page = 1;
-        const size = 100;
-        let total = 0;
-
-        do {
-          const res = await fetch(
-            `https://api.mypurecloud.ie/api/v2/users?expand=${expandFields}&pageNumber=${page}&pageSize=${size}`,
-            {headers:authHeaders()}
+        let totalUsers = 0;
+        let loadedCount = 0;
+        
+        // First, get total count
+        try {
+          const countRes = await rateLimitedFetch(
+            `https://api.mypurecloud.ie/api/v2/users?pageSize=1&pageNumber=1`
           );
-          
-          if (!res.ok) throw new Error(`API error: ${res.status}`);
-          
-          const data = await res.json();
-          allUsers = allUsers.concat(data.entities||[]);
-          total = data.total||0;
-          page++;
-          
-          // Update progress
-          const tbody = document.querySelector('#usersTable tbody');
-          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:20px;">
-            Loading... ${Math.min(allUsers.length, total)} of ${total} users
-          </td></tr>`;
-          
-        } while(allUsers.length < total);
+          const countData = await countRes.json();
+          totalUsers = countData.total || 0;
+          document.getElementById('progressTotal').textContent = totalUsers;
+        } catch (error) {
+          console.warn('Could not get total count:', error);
+          totalUsers = 1000; // Default estimate
+        }
 
-        availableUsers = allUsers.filter(u => u.name && u.name.trim() && u.name !== 'Unknown User');
+        // Fetch all users with pagination
+        while (true) {
+          try {
+            document.getElementById('progressStatus').textContent = `Loading page ${page}...`;
+            
+            const res = await rateLimitedFetch(
+              `https://api.mypurecloud.ie/api/v2/users?expand=${expandFields}&pageNumber=${page}&pageSize=${MAX_PAGE_SIZE}`
+            );
+            
+            const data = await res.json();
+            const users = data.entities || [];
+            
+            // Filter out invalid users
+            const validUsers = users.filter(u => 
+              u.name && u.name.trim() && u.name !== 'Unknown User'
+            );
+            
+            allUsers = allUsers.concat(validUsers);
+            loadedCount += users.length;
+            
+            // Update progress
+            const progressPercent = Math.min(Math.round((loadedCount / totalUsers) * 100), 100);
+            document.getElementById('progressFill').style.width = `${progressPercent}%`;
+            document.getElementById('progressPercent').textContent = `${progressPercent}%`;
+            document.getElementById('progressCount').textContent = loadedCount;
+            
+            // Check if we have all users
+            if (!data.pageCount || page >= data.pageCount || users.length < MAX_PAGE_SIZE) {
+              break;
+            }
+            
+            page++;
+            
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY));
+            
+          } catch (error) {
+            console.error(`Error fetching page ${page}:`, error);
+            
+            if (error.message.includes('429')) {
+              // Rate limited, wait and retry this page
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              continue;
+            }
+            
+            // For other errors, break and use what we have
+            showMessage(`Stopped loading at page ${page}. ${error.message}`, 'warning');
+            break;
+          }
+        }
+        
+        availableUsers = allUsers;
+        
+        // Hide progress bar
+        progressContainer.style.display = 'none';
         
         // Apply initial filters and render
         applyFilters();
@@ -589,7 +863,11 @@
       } catch (error) {
         console.error('Error fetching users:', error);
         showMessage(`Error loading users: ${error.message}`);
+        
+        // Hide progress bar on error
+        document.getElementById('progressContainer').style.display = 'none';
       } finally {
+        isFetching = false;
         document.getElementById('fetchUsers').disabled = false;
         document.getElementById('fetchUsers').textContent = 'Load Users';
       }
@@ -609,14 +887,16 @@
             (user.skills && user.skills.some(skill => 
               skill.name && skill.name.toLowerCase().includes(search)
             )) ||
-            (user.team && user.team.name && user.team.name.toLowerCase().includes(search))
+            (user.team && user.team.name && user.team.name.toLowerCase().includes(search)) ||
+            (user.conversationSummary && 
+              String(user.conversationSummary.totalConversationCount).includes(search))
           );
         });
       }
       
       // Apply column filters
       Object.keys(filters).forEach(column => {
-        const filterValue = filters[column].toLowerCase();
+        const filterValue = filters[column].toLowerCase().trim();
         if (!filterValue) return;
         
         filteredUsers = filteredUsers.filter(user => {
@@ -630,6 +910,17 @@
             );
           }
           
+          // Handle date filtering
+          if (column.includes('date') || column.includes('Date')) {
+            const dateStr = new Date(value).toISOString().split('T')[0];
+            return dateStr.includes(filterValue);
+          }
+          
+          // Handle numeric filtering
+          if (column.includes('Count') || column.includes('count')) {
+            return String(value).includes(filterValue);
+          }
+          
           return String(value).toLowerCase().includes(filterValue);
         });
       });
@@ -637,11 +928,10 @@
       // Apply status filter
       const statusFilter = document.getElementById('statusFilter').value;
       if (statusFilter) {
-        filteredUsers = filteredUsers.filter(user => 
-          user.presence && 
-          user.presence.presenceDefinition && 
-          user.presence.presenceDefinition.systemPresence === statusFilter
-        );
+        filteredUsers = filteredUsers.filter(user => {
+          if (!user.presence || !user.presence.presenceDefinition) return false;
+          return user.presence.presenceDefinition.systemPresence === statusFilter;
+        });
       }
       
       // Apply team filter
@@ -655,8 +945,11 @@
       // Apply management unit filter
       const selectedMUs = managementUnitDropdown.getSelectedValues();
       if (selectedMUs.length > 0) {
-        // Note: Management unit filtering requires additional API calls
-        // This is a simplified implementation
+        filteredUsers = filteredUsers.filter(user => {
+          // Note: This requires additional API calls to get MU memberships
+          // For now, we'll just filter by team as a proxy
+          return user.team && selectedTeams.length > 0;
+        });
       }
       
       updateStats();
@@ -683,9 +976,15 @@
         }
         
         // Handle dates
-        if (sortColumn.includes('date') || sortColumn.includes('Date') || sortColumn.includes('lastLogin')) {
+        if (sortColumn.includes('date') || sortColumn.includes('Date') || sortColumn === 'dateLastLogin') {
           valA = valA ? new Date(valA).getTime() : 0;
           valB = valB ? new Date(valB).getTime() : 0;
+        }
+        
+        // Handle numbers
+        if (sortColumn.includes('Count') || sortColumn.includes('count')) {
+          valA = Number(valA) || 0;
+          valB = Number(valB) || 0;
         }
         
         // Convert to string for comparison
@@ -693,9 +992,9 @@
         valB = String(valB || '').toLowerCase();
         
         if (sortDirection === 'asc') {
-          return valA.localeCompare(valB);
+          return valA.localeCompare(valB, undefined, { numeric: true });
         } else {
-          return valB.localeCompare(valA);
+          return valB.localeCompare(valA, undefined, { numeric: true });
         }
       });
     }
@@ -709,43 +1008,49 @@
       
       if (pageUsers.length === 0) {
         tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-light)">
-          No users found. Try adjusting your filters.
+          No users found. Try adjusting your filters or click "Load Users".
         </td></tr>`;
+        updatePaginationInfo(0, 0);
         return;
       }
       
       tbody.innerHTML = pageUsers.map(user => {
         const status = user.routingStatus?.status || 'UNKNOWN';
         const presence = user.presence?.presenceDefinition?.systemPresence || 'Offline';
-        const queues = user.routingStatus?.queues?.map(q => q.name).join(', ') || 'None';
         const team = user.team?.name || 'Unassigned';
-        const lastLogin = user.dateLastLogin ? new Date(user.dateLastLogin).toLocaleDateString() : 'Never';
-        const skills = user.skills?.map(s => s.name).join(', ') || 'None';
+        const lastLogin = user.dateLastLogin ? 
+          new Date(user.dateLastLogin).toLocaleDateString() + ' ' + 
+          new Date(user.dateLastLogin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+          : 'Never';
+        const skills = user.skills?.map(s => s.name).slice(0, 3).join(', ') || 'None';
+        const convCount = user.conversationSummary?.totalConversationCount || 0;
         
         // Determine status badge class
         let statusClass = 'status-offline';
         if (presence === 'Available') statusClass = 'status-online';
         else if (presence === 'Busy') statusClass = 'status-busy';
         else if (presence === 'Away') statusClass = 'status-away';
+        else if (presence === 'Idle') statusClass = 'status-idle';
         
         return `
           <tr>
             <td>
               <strong>${user.name || 'Unknown'}</strong><br>
-              <small class="muted">${user.id || ''}</small>
+              <small class="muted">${user.email || 'No email'}</small>
             </td>
             <td>
               <span class="status-badge ${statusClass}">${presence}</span><br>
               <small class="muted">${status}</small>
             </td>
             <td>${user.email || 'No email'}</td>
-            <td>${queues}</td>
             <td>${team}</td>
             <td>${presence}</td>
             <td>${lastLogin}</td>
-            <td>${skills}</td>
+            <td title="${user.skills?.map(s => s.name).join(', ') || 'None'}">${skills}${user.skills?.length > 3 ? '...' : ''}</td>
+            <td style="text-align:center;">${convCount}</td>
             <td>
-              <button onclick="viewUserDetails('${user.id}')" style="font-size:12px;padding:4px 8px;margin-bottom:4px;">
+              <button onclick="viewUserDetails('${user.id}')" 
+                      style="font-size:12px;padding:4px 8px;margin-bottom:4px;width:100%;">
                 View Details
               </button>
             </td>
@@ -753,16 +1058,18 @@
         `;
       }).join('');
       
-      // Update pagination info
+      updatePaginationInfo(start, end);
+      updateSortIndicators();
+    }
+
+    function updatePaginationInfo(start, end) {
+      const total = filteredUsers.length;
       document.getElementById('paginationInfo').textContent = 
-        `Showing ${start + 1}-${Math.min(end, filteredUsers.length)} of ${filteredUsers.length} users`;
+        `Showing ${start + 1}-${Math.min(end, total)} of ${total} users`;
       
       // Update pagination buttons
       document.getElementById('prevPage').disabled = currentPage === 1;
-      document.getElementById('nextPage').disabled = end >= filteredUsers.length;
-      
-      // Update sort indicators
-      updateSortIndicators();
+      document.getElementById('nextPage').disabled = end >= total;
     }
 
     function updateSortIndicators() {
@@ -789,11 +1096,15 @@
       const away = filteredUsers.filter(u => 
         u.presence?.presenceDefinition?.systemPresence === 'Away'
       ).length;
+      const busy = filteredUsers.filter(u => 
+        u.presence?.presenceDefinition?.systemPresence === 'Busy'
+      ).length;
       
       document.getElementById('totalUsers').textContent = total;
       document.getElementById('onlineUsers').textContent = online;
       document.getElementById('activeUsers').textContent = active;
       document.getElementById('awayUsers').textContent = away;
+      document.getElementById('busyUsers').textContent = busy;
     }
 
     /********* CHECKBOX DROPDOWNS *********/
@@ -854,6 +1165,10 @@
             cb.checked ? selected.add(o.value) : selected.delete(o.value);
             updateSummary();
             updateSelectAllState();
+            if (availableUsers.length > 0) {
+              applyFilters();
+              renderTable();
+            }
           });
           list.appendChild(row);
         });
@@ -879,6 +1194,10 @@
         render(search.value);
         updateSummary();
         updateSelectAllState();
+        if (availableUsers.length > 0) {
+          applyFilters();
+          renderTable();
+        }
       });
 
       selectAll.addEventListener('change', () => {
@@ -886,6 +1205,10 @@
         else selected.clear();
         render(search.value);
         updateSummary();
+        if (availableUsers.length > 0) {
+          applyFilters();
+          renderTable();
+        }
       });
 
       function setOptions(arr) {
@@ -941,12 +1264,20 @@
       
       // Refresh button
       document.getElementById('refreshData').addEventListener('click', async () => {
-        await fetchUsers();
+        if (availableUsers.length === 0) {
+          await fetchUsers();
+        } else {
+          applyFilters();
+          renderTable();
+        }
         showMessage('Data refreshed', 'success');
       });
       
       // Export CSV
       document.getElementById('exportCSV').addEventListener('click', exportToCSV);
+      
+      // Clear filters
+      document.getElementById('clearFilters').addEventListener('click', clearFilters);
       
       // Page size
       document.getElementById('pageSize').addEventListener('change', function() {
@@ -980,14 +1311,6 @@
         applyFilters();
         renderTable();
       });
-      
-      // Team filter changes
-      teamDropdown.setOptions = function(arr) {
-        this._setOptions(arr);
-        currentPage = 1;
-        applyFilters();
-        renderTable();
-      };
       
       // Column filters
       document.querySelectorAll('.column-filter').forEach(input => {
@@ -1023,39 +1346,44 @@
 
     /********* EXPORT CSV *********/
     function exportToCSV() {
+      if (filteredUsers.length === 0) {
+        showMessage('No data to export', 'info');
+        return;
+      }
+      
       const headers = [
-        'Name', 'Status', 'Email', 'Queues', 'Team', 
-        'Presence', 'Last Login', 'Skills', 'ID'
+        'Name', 'Email', 'Status', 'Presence', 'Team', 
+        'Last Login', 'Skills', 'Conversation Count', 'User ID'
       ];
       
       const data = filteredUsers.map(user => [
         user.name || '',
-        user.routingStatus?.status || '',
         user.email || '',
-        user.routingStatus?.queues?.map(q => q.name).join('; ') || '',
-        user.team?.name || '',
+        user.routingStatus?.status || '',
         user.presence?.presenceDefinition?.systemPresence || '',
-        user.dateLastLogin ? new Date(user.dateLastLogin).toLocaleDateString() : '',
+        user.team?.name || '',
+        user.dateLastLogin ? new Date(user.dateLastLogin).toISOString() : '',
         user.skills?.map(s => s.name).join('; ') || '',
+        user.conversationSummary?.totalConversationCount || 0,
         user.id || ''
       ]);
       
       const csvContent = [
         headers.join(','),
-        ...data.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+        ...data.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
       ].join('\n');
       
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
-      showMessage('CSV exported successfully', 'success');
+      showMessage(`Exported ${filteredUsers.length} users to CSV`, 'success');
     }
 
     /********* UTILITY FUNCTIONS *********/
@@ -1079,16 +1407,54 @@
 
     function viewUserDetails(userId) {
       const user = availableUsers.find(u => u.id === userId);
-      if (!user) return;
+      if (!user) {
+        showMessage('User not found', 'error');
+        return;
+      }
       
-      const details = JSON.stringify(user, null, 2);
+      // Create a formatted display of user details
+      const details = `
+        <div style="font-family: monospace; padding: 20px; max-width: 800px;">
+          <h2>${user.name || 'Unknown User'}</h2>
+          <hr>
+          <h3>Basic Info</h3>
+          <p><strong>Email:</strong> ${user.email || 'N/A'}</p>
+          <p><strong>ID:</strong> ${user.id || 'N/A'}</p>
+          <p><strong>Last Login:</strong> ${user.dateLastLogin ? new Date(user.dateLastLogin).toLocaleString() : 'Never'}</p>
+          
+          <h3>Status & Presence</h3>
+          <p><strong>Status:</strong> ${user.routingStatus?.status || 'N/A'}</p>
+          <p><strong>Presence:</strong> ${user.presence?.presenceDefinition?.systemPresence || 'N/A'}</p>
+          
+          <h3>Team & Organization</h3>
+          <p><strong>Team:</strong> ${user.team?.name || 'Unassigned'}</p>
+          
+          <h3>Skills & Certifications</h3>
+          <p><strong>Skills:</strong> ${user.skills?.map(s => s.name).join(', ') || 'None'}</p>
+          <p><strong>Certifications:</strong> ${user.certifications?.map(c => c.name).join(', ') || 'None'}</p>
+          
+          <h3>Conversation Summary</h3>
+          <p><strong>Total Conversations:</strong> ${user.conversationSummary?.totalConversationCount || 0}</p>
+          
+          <h3>Full JSON</h3>
+          <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 400px; overflow: auto;">
+${JSON.stringify(user, null, 2)}
+          </pre>
+        </div>
+      `;
+      
       const win = window.open('', '_blank');
-      win.document.write(`<pre>${details}</pre>`);
+      win.document.write(details);
+      win.document.title = `${user.name || 'User'} Details`;
     }
 
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      // Adjust table responsiveness if needed
+    function showLoading(show) {
+      document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+    }
+
+    // Initialize on load
+    window.addEventListener('load', () => {
+      // Any additional initialization
     });
 
   </script>
