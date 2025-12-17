@@ -3,14 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta http-equiv="Content-Security-Policy" 
-        content="default-src 'self' https://api.mypurecloud.ie https://login.mypurecloud.ie;
-                 script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.mypurecloud.ie;
-                 style-src 'self' 'unsafe-inline';
-                 connect-src 'self' https://api.mypurecloud.ie https://login.mypurecloud.ie;
-                 frame-src 'self' https://login.mypurecloud.ie;
-                 img-src 'self' data:;
-                 font-src 'self' data:;">
   <style>
     :root{
       --primary-color:#63AB8F; --secondary-color:#4A8C7D; --border-color:#DEE2E6;
@@ -542,7 +534,7 @@
   </div>
 
   <script>
-    /********* OAuth + Global Vars *********/
+    /********* OAuth - IDENTICAL TO YOUR OTHER APP *********/
     const clientId = 'fe305808-b368-4547-8af9-325d28d552bb';
     const redirectUri = 'https://gmcglynn88.github.io/Queue-updater/';
     const oauthUrl =
@@ -555,7 +547,7 @@
     
     // Rate limiting
     let rateLimitRemaining = 100;
-    let rateLimitResetTime = Date.now() + 60000; // Default 1 minute
+    let rateLimitResetTime = Date.now() + 60000;
     
     // Table state
     let currentPage = 1;
@@ -567,10 +559,11 @@
     let filteredUsers = [];
     
     // Pagination tracking for API calls
-    const MAX_PAGE_SIZE = 100; // API max per page
-    const REQUEST_DELAY = 200; // Delay between requests in ms to avoid rate limits
+    const MAX_PAGE_SIZE = 100;
+    const REQUEST_DELAY = 200;
     let isFetching = false;
 
+    /********* AUTHENTICATION - IDENTICAL TO YOUR OTHER APP *********/
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);
       const params = new URLSearchParams(hash);
@@ -584,7 +577,7 @@
       document.getElementById("loginSection").style.display = "none";
       document.getElementById("appContent").style.display = "block";
 
-      initializeApp(token);
+      initializeApp();
     });
 
     function showMessage(message, type = 'error') {
@@ -617,7 +610,6 @@
           rateLimitResetTime = Date.now() + (resetSeconds * 1000);
           document.getElementById('rateLimitReset').textContent = resetSeconds;
           
-          // Show warning if rate limit is low
           if (rateLimitRemaining < 20) {
             document.getElementById('rateLimitInfo').style.display = 'block';
             document.getElementById('rateLimitInfo').style.background = 'var(--warning)';
