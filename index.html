@@ -8,6 +8,32 @@
       --primary-color:#63AB8F; --secondary-color:#4A8C7D; --border-color:#DEE2E6;
       --light-bg:#F8F9FA; --card-bg:#FFFFFF; --text-color:#2C3E50; --text-light:#6C757D;
       --pill:#e9f6f0; --filter-bg:#f0f7f3; --warning:#ffc107; --danger:#dc3545;
+      
+      /* New status colors */
+      --status-onqueue: #b3e0ff; /* Pastel Blue */
+      --status-offqueue: #d2b48c; /* Brown/Tan */
+      --status-available: #c3e6cb; /* Green */
+      --status-offline: #e2e3e5; /* Grey */
+      --status-unavailable: #d6d8db; /* Darker Grey */
+      --status-busy: #f5c6cb; /* Red */
+      --status-meetings: #f8d7da; /* Red */
+      --status-breaks: #ffeaa7; /* Orange/Yellow */
+      --status-meal: #ffcc99; /* Orange */
+      --status-away: #ffc107; /* Orange */
+      --status-training: #c3e6cb; /* Green */
+      
+      /* Text colors for statuses */
+      --status-onqueue-text: #0066cc;
+      --status-offqueue-text: #8b4513;
+      --status-available-text: #155724;
+      --status-offline-text: #383d41;
+      --status-unavailable-text: #383d41;
+      --status-busy-text: #721c24;
+      --status-meetings-text: #721c24;
+      --status-breaks-text: #856404;
+      --status-meal-text: #856404;
+      --status-away-text: #856404;
+      --status-training-text: #155724;
     }
 
     body{
@@ -222,11 +248,19 @@
       letter-spacing: 0.5px;
     }
 
-    .status-online { background: #d4edda; color: #155724; }
-    .status-offline { background: #f8d7da; color: #721c24; }
-    .status-away { background: #fff3cd; color: #856404; }
-    .status-busy { background: #d1ecf1; color: #0c5460; }
-    .status-idle { background: #e2e3e5; color: #383d41; }
+    /* Updated status color classes */
+    .status-onqueue { background: var(--status-onqueue); color: var(--status-onqueue-text); }
+    .status-offqueue { background: var(--status-offqueue); color: var(--status-offqueue-text); }
+    .status-available { background: var(--status-available); color: var(--status-available-text); }
+    .status-offline { background: var(--status-offline); color: var(--status-offline-text); }
+    .status-unavailable { background: var(--status-unavailable); color: var(--status-unavailable-text); }
+    .status-busy { background: var(--status-busy); color: var(--status-busy-text); }
+    .status-meetings { background: var(--status-meetings); color: var(--status-meetings-text); }
+    .status-breaks { background: var(--status-breaks); color: var(--status-breaks-text); }
+    .status-meal { background: var(--status-meal); color: var(--status-meal-text); }
+    .status-away { background: var(--status-away); color: var(--status-away-text); }
+    .status-training { background: var(--status-training); color: var(--status-training-text); }
+    .status-idle { background: var(--status-offline); color: var(--status-offline-text); }
 
     .action-buttons {
       display: flex;
@@ -597,10 +631,17 @@
             <label>Filter by Status</label>
             <select id="statusFilter">
               <option value="">All Statuses</option>
+              <option value="ON_QUEUE">On Queue</option>
+              <option value="OFF_QUEUE">Off Queue</option>
               <option value="AVAILABLE">Available</option>
-              <option value="BUSY">Busy</option>
-              <option value="AWAY">Away</option>
               <option value="OFFLINE">Offline</option>
+              <option value="UNAVAILABLE">Unavailable</option>
+              <option value="BUSY">Busy</option>
+              <option value="MEETINGS">Meetings</option>
+              <option value="BREAKS">Breaks</option>
+              <option value="MEAL">Meal</option>
+              <option value="AWAY">Away</option>
+              <option value="TRAINING">Training</option>
               <option value="IDLE">Idle</option>
             </select>
           </div>
@@ -663,10 +704,6 @@
             <span class="stat-value" id="awayUsers">0</span>
             <span class="stat-label">Away</span>
           </div>
-          <div class="stat-item">
-            <span class="stat-value" id="busyUsers">0</span>
-            <span class="stat-label">Busy</span>
-          </div>
         </div>
 
         <div class="table-container">
@@ -690,18 +727,33 @@
                 <td><input type="text" class="column-filter" data-column="roles" placeholder="Filter role..."></td>
                 <td><select class="column-filter" data-column="routingStatus.status">
                   <option value="">All</option>
+                  <option value="ON_QUEUE">On Queue</option>
+                  <option value="OFF_QUEUE">Off Queue</option>
+                  <option value="AVAILABLE">Available</option>
+                  <option value="OFFLINE">Offline</option>
+                  <option value="UNAVAILABLE">Unavailable</option>
+                  <option value="BUSY">Busy</option>
+                  <option value="MEETINGS">Meetings</option>
+                  <option value="BREAKS">Breaks</option>
+                  <option value="MEAL">Meal</option>
+                  <option value="AWAY">Away</option>
+                  <option value="TRAINING">Training</option>
                   <option value="IDLE">Idle</option>
-                  <option value="INTERACTING">Interacting</option>
-                  <option value="NOT_RESPONDING">Not Responding</option>
-                  <option value="COMMUNICATING">Communicating</option>
                 </select></td>
                 <td><input type="text" class="column-filter" data-column="team.name" placeholder="Filter team..."></td>
                 <td><select class="column-filter" data-column="presence.presenceDefinition.systemPresence">
                   <option value="">All</option>
+                  <option value="On Queue">On Queue</option>
+                  <option value="Off Queue">Off Queue</option>
                   <option value="Available">Available</option>
-                  <option value="Busy">Busy</option>
-                  <option value="Away">Away</option>
                   <option value="Offline">Offline</option>
+                  <option value="Unavailable">Unavailable</option>
+                  <option value="Busy">Busy</option>
+                  <option value="Meetings">Meetings</option>
+                  <option value="Breaks">Breaks</option>
+                  <option value="Meal">Meal</option>
+                  <option value="Away">Away</option>
+                  <option value="Training">Training</option>
                   <option value="Idle">Idle</option>
                 </select></td>
                 <td><input type="text" class="column-filter" data-column="dateLastLogin" placeholder="YYYY-MM-DD..."></td>
@@ -833,6 +885,29 @@
     const MAX_PAGE_SIZE = 100;
     const REQUEST_DELAY = 200;
     let isFetching = false;
+
+    // Status color mapping function
+    function getStatusClass(presence) {
+      if (!presence) return 'status-offline';
+      
+      const status = String(presence).toLowerCase().trim();
+      
+      if (status.includes('on queue') || status === 'on_queue') return 'status-onqueue';
+      if (status.includes('off queue') || status === 'off_queue') return 'status-offqueue';
+      if (status.includes('available')) return 'status-available';
+      if (status.includes('offline')) return 'status-offline';
+      if (status.includes('unavailable')) return 'status-unavailable';
+      if (status.includes('busy')) return 'status-busy';
+      if (status.includes('meeting')) return 'status-meetings';
+      if (status.includes('break')) return 'status-breaks';
+      if (status.includes('meal')) return 'status-meal';
+      if (status.includes('away')) return 'status-away';
+      if (status.includes('train')) return 'status-training';
+      if (status.includes('idle')) return 'status-idle';
+      
+      // Default fallback
+      return 'status-offline';
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       const hash = window.location.hash.substring(1);
@@ -1289,7 +1364,7 @@
       const pageUsers = sortUsers([...filteredUsers]).slice(start, end);
       
       if (pageUsers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-light)">
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-light)}">
           No users found. Try adjusting your filters or click "Load Users".
         </td></tr>`;
         updatePaginationInfo(0, 0);
@@ -1312,12 +1387,7 @@
         const daysSinceLogin = user.daysSinceLastLogin || 0;
         const roles = user.roles || 'No role';
         const userQueues = queuesList[index] || [];
-        
-        let statusClass = 'status-offline';
-        if (presence === 'Available') statusClass = 'status-online';
-        else if (presence === 'Busy') statusClass = 'status-busy';
-        else if (presence === 'Away') statusClass = 'status-away';
-        else if (presence === 'Idle') statusClass = 'status-idle';
+        const statusClass = getStatusClass(presence);
         
         let daysClass = '';
         if (daysSinceLogin > 30) daysClass = 'style="color: var(--danger); font-weight: bold;"';
@@ -1379,7 +1449,8 @@
     function updateStats() {
       const total = filteredUsers.length;
       const online = filteredUsers.filter(u => 
-        u.presence?.presenceDefinition?.systemPresence === 'Available'
+        u.presence?.presenceDefinition?.systemPresence === 'Available' || 
+        u.presence?.presenceDefinition?.systemPresence === 'On Queue'
       ).length;
       const active = filteredUsers.filter(u => {
         if (!u.dateLastLogin) return false;
@@ -1387,18 +1458,15 @@
         const today = new Date();
         return lastLogin.toDateString() === today.toDateString();
       }).length;
-      const away = filteredUsers.filter(u => 
-        u.presence?.presenceDefinition?.systemPresence === 'Away'
-      ).length;
-      const busy = filteredUsers.filter(u => 
-        u.presence?.presenceDefinition?.systemPresence === 'Busy'
-      ).length;
+      const away = filteredUsers.filter(u => {
+        const presence = u.presence?.presenceDefinition?.systemPresence || '';
+        return presence === 'Away' || presence === 'Breaks' || presence === 'Meal';
+      }).length;
       
       document.getElementById('totalUsers').textContent = total;
       document.getElementById('onlineUsers').textContent = online;
       document.getElementById('activeUsers').textContent = active;
       document.getElementById('awayUsers').textContent = away;
-      document.getElementById('busyUsers').textContent = busy;
     }
 
     // Column Resizing Functions
@@ -1798,7 +1866,7 @@
       const tbody = document.querySelector('#inactiveUsersTable tbody');
       
       if (inactiveUsers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-light)">
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-light)}">
           No inactive users found. Adjust your criteria and try again.
         </td></tr>`;
         return;
@@ -1821,12 +1889,7 @@
         const roles = user.roles || 'No role';
         const userQueues = index < queuesList.length ? queuesList[index] : [];
         const skills = user.skills?.map(s => s.name) || [];
-        
-        let statusClass = 'status-offline';
-        if (presence === 'Available') statusClass = 'status-online';
-        else if (presence === 'Busy') statusClass = 'status-busy';
-        else if (presence === 'Away') statusClass = 'status-away';
-        else if (presence === 'Idle') statusClass = 'status-idle';
+        const statusClass = getStatusClass(presence);
         
         let daysClass = '';
         if (daysSinceLogin > 30) daysClass = 'style="color: var(--danger); font-weight: bold;"';
