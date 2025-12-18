@@ -1244,15 +1244,16 @@
     
     // Default columns to show
     const DEFAULT_VISIBLE_COLUMNS = [
+      'id',
       'name',
       'email',
-      'roles',
+      'authorization.roles.name',
       'routingStatus.status',
-      'team.name',
       'presence.presenceDefinition.systemPresence',
+      'team.name',
       'dateLastLogin',
       'daysSinceLastLogin',
-      'skills',
+      'skills.name',
       'queues'
     ];
 
@@ -1383,62 +1384,89 @@
     function initializeColumnManager() {
       allColumns = [
         // Basic Info Category
+        { id: 'id', label: 'User ID', category: 'Basic Info', type: 'string', default: true },
         { id: 'name', label: 'Name', category: 'Basic Info', type: 'string', default: true },
-        { id: 'email', label: 'Email', category: 'Basic Info', type: 'string', default: true },
-        { id: 'id', label: 'User ID', category: 'Basic Info', type: 'string', default: false },
         { id: 'division.id', label: 'Division ID', category: 'Basic Info', type: 'string', default: false },
         { id: 'division.name', label: 'Division Name', category: 'Basic Info', type: 'string', default: false },
+        { id: 'chat', label: 'Chat', category: 'Basic Info', type: 'string', default: false },
+        { id: 'email', label: 'Email', category: 'Basic Info', type: 'string', default: true },
+        { id: 'username', label: 'Username', category: 'Basic Info', type: 'string', default: false },
+        { id: 'version', label: 'Version', category: 'Basic Info', type: 'number', default: false },
+        { id: 'state', label: 'State', category: 'Basic Info', type: 'string', default: false },
+        { id: 'manager', label: 'Manager', category: 'Basic Info', type: 'string', default: false },
         
-        // Status & Presence Category
-        { id: 'routingStatus.status', label: 'Routing Status', category: 'Status & Presence', type: 'string', default: true },
-        { id: 'presence.presenceDefinition.systemPresence', label: 'System Presence', category: 'Status & Presence', type: 'string', default: true },
-        { id: 'integrationPresence.presenceDefinition.systemPresence', label: 'Integration Presence', category: 'Status & Presence', type: 'string', default: false },
-        { id: 'conversationSummary.active', label: 'Active Conversations', category: 'Status & Presence', type: 'number', default: false },
-        { id: 'outOfOffice.name', label: 'Out of Office', category: 'Status & Presence', type: 'string', default: false },
-        
-        // Team & Organization Category
-        { id: 'team.name', label: 'Team', category: 'Team & Organization', type: 'string', default: true },
-        { id: 'team.id', label: 'Team ID', category: 'Team & Organization', type: 'string', default: false },
-        { id: 'groups', label: 'Groups', category: 'Team & Organization', type: 'array', default: false },
-        { id: 'workPlanBidRanks', label: 'Work Plan Bid Ranks', category: 'Team & Organization', type: 'array', default: false },
-        
-        // Role & Authorization Category
-        { id: 'roles', label: 'Roles', category: 'Role & Authorization', type: 'array', default: true },
-        { id: 'authorization.unusedRoles', label: 'Unused Roles', category: 'Role & Authorization', type: 'array', default: false },
-        { id: 'authorization.permissions', label: 'Permissions', category: 'Role & Authorization', type: 'array', default: false },
-        { id: 'lasttokenissued', label: 'Last Token Issued', category: 'Role & Authorization', type: 'date', default: false },
-        
-        // Location & Station Category
-        { id: 'geolocation.city', label: 'City', category: 'Location & Station', type: 'string', default: false },
-        { id: 'geolocation.country', label: 'Country', category: 'Location & Station', type: 'string', default: false },
-        { id: 'station.name', label: 'Station Name', category: 'Location & Station', type: 'string', default: false },
-        { id: 'station.type', label: 'Station Type', category: 'Location & Station', type: 'string', default: false },
-        
-        // Skills & Attributes Category
-        { id: 'skills', label: 'Skills', category: 'Skills & Attributes', type: 'array', default: true },
-        { id: 'profileSkills', label: 'Profile Skills', category: 'Skills & Attributes', type: 'array', default: false },
-        { id: 'certifications', label: 'Certifications', category: 'Skills & Attributes', type: 'array', default: false },
-        { id: 'languages', label: 'Languages', category: 'Skills & Attributes', type: 'array', default: false },
-        { id: 'languagePreference', label: 'Language Preference', category: 'Skills & Attributes', type: 'string', default: false },
-        { id: 'customAttributes', label: 'Custom Attributes', category: 'Skills & Attributes', type: 'object', default: false },
-        
-        // Contact Settings Category
-        { id: 'externalContactsSettings', label: 'External Contact Settings', category: 'Contact Settings', type: 'object', default: false },
+        // Contact Information Category
+        { id: 'primaryContactInfo.address', label: 'Primary Contact Address', category: 'Contact Information', type: 'string', default: false },
+        { id: 'primaryContactInfo.mediaType', label: 'Primary Contact Media Type', category: 'Contact Information', type: 'string', default: false },
+        { id: 'primaryContactInfo.type', label: 'Primary Contact Type', category: 'Contact Information', type: 'string', default: false },
+        { id: 'addresses.address', label: 'Address', category: 'Contact Information', type: 'string', default: false },
+        { id: 'addresses.display', label: 'Address Display', category: 'Contact Information', type: 'string', default: false },
+        { id: 'addresses.mediaType', label: 'Address Media Type', category: 'Contact Information', type: 'string', default: false },
+        { id: 'addresses.type', label: 'Address Type', category: 'Contact Information', type: 'string', default: false },
+        { id: 'addresses.extension', label: 'Address Extension', category: 'Contact Information', type: 'string', default: false },
+        { id: 'addresses.countryCode', label: 'Country Code', category: 'Contact Information', type: 'string', default: false },
         
         // Employment Info Category
         { id: 'employerInfo.officialName', label: 'Official Name', category: 'Employment Info', type: 'string', default: false },
         { id: 'employerInfo.employeeId', label: 'Employee ID', category: 'Employment Info', type: 'string', default: false },
         { id: 'employerInfo.employeeType', label: 'Employee Type', category: 'Employment Info', type: 'string', default: false },
-        { id: 'employerInfo.hireDate', label: 'Hire Date', category: 'Employment Info', type: 'date', default: false },
+        { id: 'employerInfo.dateHire', label: 'Hire Date', category: 'Employment Info', type: 'date', default: false },
         
-        // Biography & Dates Category
-        { id: 'biography.biography', label: 'Biography', category: 'Biography & Dates', type: 'string', default: false },
-        { id: 'dateLastLogin', label: 'Last Login Date', category: 'Biography & Dates', type: 'date', default: true },
-        { id: 'dateWelcomeSent', label: 'Welcome Sent Date', category: 'Biography & Dates', type: 'date', default: false },
-        { id: 'daysSinceLastLogin', label: 'Days Since Login', category: 'Biography & Dates', type: 'number', default: true },
+        // Status & Presence Category
+        { id: 'routingStatus.status', label: 'Routing Status', category: 'Status & Presence', type: 'string', default: true },
+        { id: 'routingStatus.startTime', label: 'Routing Start Time', category: 'Status & Presence', type: 'date', default: false },
+        { id: 'presence.source', label: 'Presence Source', category: 'Status & Presence', type: 'string', default: false },
+        { id: 'presence.presenceDefinition.id', label: 'Presence Definition ID', category: 'Status & Presence', type: 'string', default: false },
+        { id: 'presence.presenceDefinition.systemPresence', label: 'System Presence', category: 'Status & Presence', type: 'string', default: true },
+        { id: 'presence.presenceDefinition.selfUri', label: 'Presence Definition URI', category: 'Status & Presence', type: 'string', default: false },
+        { id: 'presence.message', label: 'Presence Message', category: 'Status & Presence', type: 'string', default: false },
+        { id: 'presence.modifiedDate', label: 'Presence Modified Date', category: 'Status & Presence', type: 'date', default: false },
+        { id: 'outOfOffice.active', label: 'Out of Office Active', category: 'Status & Presence', type: 'boolean', default: false },
+        { id: 'outOfOffice.indefinite', label: 'Out of Office Indefinite', category: 'Status & Presence', type: 'boolean', default: false },
+        { id: 'acdAutoAnswer', label: 'ACD Auto Answer', category: 'Status & Presence', type: 'boolean', default: false },
         
-        // Queues Category
-        { id: 'queues', label: 'Queues', category: 'Queues', type: 'array', default: true }
+        // Authorization & Roles Category
+        { id: 'authorization.roles.id', label: 'Role IDs', category: 'Authorization & Roles', type: 'array', default: false },
+        { id: 'authorization.roles.name', label: 'Roles', category: 'Authorization & Roles', type: 'array', default: true },
+        { id: 'authorization.unusedRoles.id', label: 'Unused Role IDs', category: 'Authorization & Roles', type: 'array', default: false },
+        { id: 'authorization.unusedRoles.name', label: 'Unused Roles', category: 'Authorization & Roles', type: 'array', default: false },
+        { id: 'authorization.permissions', label: 'Permissions', category: 'Authorization & Roles', type: 'array', default: false },
+        { id: 'authorization.permissionPolicies.domain', label: 'Permission Domain', category: 'Authorization & Roles', type: 'string', default: false },
+        { id: 'authorization.permissionPolicies.entityName', label: 'Permission Entity Name', category: 'Authorization & Roles', type: 'string', default: false },
+        { id: 'authorization.permissionPolicies.allowConditions', label: 'Allow Conditions', category: 'Authorization & Roles', type: 'boolean', default: false },
+        { id: 'authorization.permissionPolicies.actionSet', label: 'Action Set', category: 'Authorization & Roles', type: 'array', default: false },
+        
+        // Skills & Certifications Category
+        { id: 'certifications', label: 'Certifications', category: 'Skills & Certifications', type: 'array', default: false },
+        { id: 'profileSkills', label: 'Profile Skills', category: 'Skills & Certifications', type: 'array', default: false },
+        { id: 'skills.id', label: 'Skill IDs', category: 'Skills & Certifications', type: 'array', default: false },
+        { id: 'skills.name', label: 'Skills', category: 'Skills & Certifications', type: 'array', default: true },
+        { id: 'skills.proficiency', label: 'Skill Proficiency', category: 'Skills & Certifications', type: 'number', default: false },
+        { id: 'skills.state', label: 'Skill State', category: 'Skills & Certifications', type: 'string', default: false },
+        { id: 'languages', label: 'Languages', category: 'Skills & Certifications', type: 'array', default: false },
+        
+        // Organization & Groups Category
+        { id: 'locations', label: 'Locations', category: 'Organization & Groups', type: 'array', default: false },
+        { id: 'groups.id', label: 'Group IDs', category: 'Organization & Groups', type: 'array', default: false },
+        { id: 'team.id', label: 'Team ID', category: 'Organization & Groups', type: 'string', default: false },
+        { id: 'team.name', label: 'Team', category: 'Organization & Groups', type: 'string', default: true },
+        { id: 'team.selfUri', label: 'Team URI', category: 'Organization & Groups', type: 'string', default: false },
+        
+        // Work & Scheduling Category
+        { id: 'workPlanBidRanks.id', label: 'Work Plan Bid Ranks', category: 'Work & Scheduling', type: 'array', default: false },
+        
+        // External Contacts Category
+        { id: 'externalContactsSettings.manuallyAssignDivisionsToInteractions', label: 'Manual Division Assignment to Interactions', category: 'External Contacts', type: 'boolean', default: false },
+        { id: 'externalContactsSettings.manuallyAssignDivisionsToContacts', label: 'Manual Division Assignment to Contacts', category: 'External Contacts', type: 'boolean', default: false },
+        
+        // Token & Login Category
+        { id: 'lastTokenIssued.dateIssued', label: 'Last Token Issued Date', category: 'Token & Login', type: 'date', default: false },
+        { id: 'dateLastLogin', label: 'Last Login Date', category: 'Token & Login', type: 'date', default: true },
+        { id: 'dateWelcomeSent', label: 'Welcome Sent Date', category: 'Token & Login', type: 'date', default: false },
+        
+        // Calculated Fields (not from API directly)
+        { id: 'daysSinceLastLogin', label: 'Days Since Login', category: 'Calculated Fields', type: 'number', default: true },
+        { id: 'queues', label: 'Queues', category: 'Calculated Fields', type: 'array', default: true }
       ];
       
       // Load saved column preferences from localStorage
@@ -1828,10 +1856,10 @@
       
       clearFilters();
       
-      const rolesFilter = document.querySelector('.column-filter[data-column="roles"]');
+      const rolesFilter = document.querySelector('.column-filter[data-column="authorization.roles.name"]');
       if (rolesFilter) {
         rolesFilter.value = roleName;
-        filters['roles'] = roleName;
+        filters['authorization.roles.name'] = roleName;
       }
       
       applyFilters();
@@ -2147,7 +2175,7 @@
         const rowCells = visibleColumns.map(columnId => {
           let cellValue = getNestedValue(user, columnId);
           
-          if (columnId === 'skills') {
+          if (columnId === 'skills.name') {
             const skills = user.skills?.map(s => s.name) || [];
             return `
               <td>
@@ -2173,7 +2201,7 @@
             `;
           }
           
-          if (columnId === 'roles') {
+          if (columnId === 'authorization.roles.name') {
             const roles = user.roles || [];
             return `
               <td>
@@ -2228,6 +2256,10 @@
           
           if (columnId === 'name') {
             return `<td><strong>${cellValue || 'Unknown'}</strong></td>`;
+          }
+          
+          if (columnId === 'id') {
+            return `<td><small style="color: var(--text-light);">${cellValue || ''}</small></td>`;
           }
           
           if (Array.isArray(cellValue)) {
@@ -2538,7 +2570,7 @@
         header.style.width = '';
         rows.forEach(row => {
           const cell = row.querySelector(`td:nth-child(${index + 1})`);
-          if (cell) {
+            if (cell) {
             cell.style.width = '';
           }
         });
@@ -3010,12 +3042,12 @@
         const row = visibleColumns.map(columnId => {
           let value = getNestedValue(user, columnId);
           
-          if (columnId === 'skills') {
+          if (columnId === 'skills.name') {
             const skills = user.skills?.map(s => s.name) || [];
             return skills.join('; ');
           }
           
-          if (columnId === 'roles') {
+          if (columnId === 'authorization.roles.name') {
             const roles = user.roles || [];
             return roles.join('; ');
           }
@@ -3172,6 +3204,7 @@
     // Make functions available globally for onclick handlers
     window.viewRoleUsers = viewRoleUsers;
     window.exportRoleUsers = exportRoleUsers;
+    window.toggleCategory = toggleCategory;
 
   </script>
 </body>
