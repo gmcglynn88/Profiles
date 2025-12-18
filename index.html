@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
+    /* All your CSS styles remain exactly the same */
     :root{
       --primary-color:#63AB8F; --secondary-color:#4A8C7D; --border-color:#DEE2E6;
       --light-bg:#F8F9FA; --card-bg:#FFFFFF; --text-color:#2C3E50; --text-light:#6C757D;
@@ -1242,18 +1243,17 @@
     let allColumns = [];
     let columnCategories = {};
     
-    // Default columns to show
+    // Default columns to show - SIMPLIFIED to test
     const DEFAULT_VISIBLE_COLUMNS = [
-      'id',
       'name',
       'email',
-      'authorization.roles.name',
+      'roles',
       'routingStatus.status',
-      'presence.presenceDefinition.systemPresence',
       'team.name',
+      'presence.presenceDefinition.systemPresence',
       'dateLastLogin',
       'daysSinceLastLogin',
-      'skills.name',
+      'skills',
       'queues'
     ];
 
@@ -1361,50 +1361,75 @@
         await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY));
       }
       
-      const response = await fetch(url, {
-        ...options,
-        headers: { ...authHeaders(), ...options.headers }
-      });
-      
-      updateRateLimitInfo(response.headers);
-      
-      if (!response.ok) {
-        if (response.status === 429) {
-          const retryAfter = response.headers.get('Retry-After') || 60;
-          showMessage(`Rate limited. Retrying in ${retryAfter} seconds...`, 'info');
-          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-          return rateLimitedFetch(url, options);
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: { ...authHeaders(), ...options.headers }
+        });
+        
+        updateRateLimitInfo(response.headers);
+        
+        if (!response.ok) {
+          if (response.status === 429) {
+            const retryAfter = response.headers.get('Retry-After') || 60;
+            showMessage(`Rate limited. Retrying in ${retryAfter} seconds...`, 'info');
+            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+            return rateLimitedFetch(url, options);
+          }
+          throw new Error(`API error: ${response.status} ${response.statusText}`);
         }
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+        
+        return response;
+      } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
       }
-      
-      return response;
     }
 
     function initializeColumnManager() {
       allColumns = [
         // Basic Info Category
-        { id: 'id', label: 'User ID', category: 'Basic Info', type: 'string', default: true },
         { id: 'name', label: 'Name', category: 'Basic Info', type: 'string', default: true },
+        { id: 'email', label: 'Email', category: 'Basic Info', type: 'string', default: true },
+        { id: 'id', label: 'User ID', category: 'Basic Info', type: 'string', default: false },
         { id: 'division.id', label: 'Division ID', category: 'Basic Info', type: 'string', default: false },
         { id: 'division.name', label: 'Division Name', category: 'Basic Info', type: 'string', default: false },
-        { id: 'chat', label: 'Chat', category: 'Basic Info', type: 'string', default: false },
-        { id: 'email', label: 'Email', category: 'Basic Info', type: 'string', default: true },
-        { id: 'username', label: 'Username', category: 'Basic Info', type: 'string', default: false },
-        { id: 'version', label: 'Version', category: 'Basic Info', type: 'number', default: false },
-        { id: 'state', label: 'State', category: 'Basic Info', type: 'string', default: false },
-        { id: 'manager', label: 'Manager', category: 'Basic Info', type: 'string', default: false },
         
-        // Contact Information Category
-        { id: 'primaryContactInfo.address', label: 'Primary Contact Address', category: 'Contact Information', type: 'string', default: false },
-        { id: 'primaryContactInfo.mediaType', label: 'Primary Contact Media Type', category: 'Contact Information', type: 'string', default: false },
-        { id: 'primaryContactInfo.type', label: 'Primary Contact Type', category: 'Contact Information', type: 'string', default: false },
-        { id: 'addresses.address', label: 'Address', category: 'Contact Information', type: 'string', default: false },
-        { id: 'addresses.display', label: 'Address Display', category: 'Contact Information', type: 'string', default: false },
-        { id: 'addresses.mediaType', label: 'Address Media Type', category: 'Contact Information', type: 'string', default: false },
-        { id: 'addresses.type', label: 'Address Type', category: 'Contact Information', type: 'string', default: false },
-        { id: 'addresses.extension', label: 'Address Extension', category: 'Contact Information', type: 'string', default: false },
-        { id: 'addresses.countryCode', label: 'Country Code', category: 'Contact Information', type: 'string', default: false },
+        // Status & Presence Category
+        { id: 'routingStatus.status', label: 'Routing Status', category: 'Status & Presence', type: 'string', default: true },
+        { id: 'presence.presenceDefinition.systemPresence', label: 'System Presence', category: 'Status & Presence', type: 'string', default: true },
+        { id: 'integrationPresence.presenceDefinition.systemPresence', label: 'Integration Presence', category: 'Status & Presence', type: 'string', default: false },
+        { id: 'conversationSummary.active', label: 'Active Conversations', category: 'Status & Presence', type: 'number', default: false },
+        { id: 'outOfOffice.name', label: 'Out of Office', category: 'Status & Presence', type: 'string', default: false },
+        
+        // Team & Organization Category
+        { id: 'team.name', label: 'Team', category: 'Team & Organization', type: 'string', default: true },
+        { id: 'team.id', label: 'Team ID', category: 'Team & Organization', type: 'string', default: false },
+        { id: 'groups', label: 'Groups', category: 'Team & Organization', type: 'array', default: false },
+        { id: 'workPlanBidRanks', label: 'Work Plan Bid Ranks', category: 'Team & Organization', type: 'array', default: false },
+        
+        // Role & Authorization Category
+        { id: 'roles', label: 'Roles', category: 'Role & Authorization', type: 'array', default: true },
+        { id: 'authorization.unusedRoles', label: 'Unused Roles', category: 'Role & Authorization', type: 'array', default: false },
+        { id: 'authorization.permissions', label: 'Permissions', category: 'Role & Authorization', type: 'array', default: false },
+        { id: 'lasttokenissued', label: 'Last Token Issued', category: 'Role & Authorization', type: 'date', default: false },
+        
+        // Location & Station Category
+        { id: 'geolocation.city', label: 'City', category: 'Location & Station', type: 'string', default: false },
+        { id: 'geolocation.country', label: 'Country', category: 'Location & Station', type: 'string', default: false },
+        { id: 'station.name', label: 'Station Name', category: 'Location & Station', type: 'string', default: false },
+        { id: 'station.type', label: 'Station Type', category: 'Location & Station', type: 'string', default: false },
+        
+        // Skills & Attributes Category
+        { id: 'skills', label: 'Skills', category: 'Skills & Attributes', type: 'array', default: true },
+        { id: 'profileSkills', label: 'Profile Skills', category: 'Skills & Attributes', type: 'array', default: false },
+        { id: 'certifications', label: 'Certifications', category: 'Skills & Attributes', type: 'array', default: false },
+        { id: 'languages', label: 'Languages', category: 'Skills & Attributes', type: 'array', default: false },
+        { id: 'languagePreference', label: 'Language Preference', category: 'Skills & Attributes', type: 'string', default: false },
+        { id: 'customAttributes', label: 'Custom Attributes', category: 'Skills & Attributes', type: 'object', default: false },
+        
+        // Contact Settings Category
+        { id: 'externalContactsSettings', label: 'External Contact Settings', category: 'Contact Settings', type: 'object', default: false },
         
         // Employment Info Category
         { id: 'employerInfo.officialName', label: 'Official Name', category: 'Employment Info', type: 'string', default: false },
@@ -1412,61 +1437,14 @@
         { id: 'employerInfo.employeeType', label: 'Employee Type', category: 'Employment Info', type: 'string', default: false },
         { id: 'employerInfo.dateHire', label: 'Hire Date', category: 'Employment Info', type: 'date', default: false },
         
-        // Status & Presence Category
-        { id: 'routingStatus.status', label: 'Routing Status', category: 'Status & Presence', type: 'string', default: true },
-        { id: 'routingStatus.startTime', label: 'Routing Start Time', category: 'Status & Presence', type: 'date', default: false },
-        { id: 'presence.source', label: 'Presence Source', category: 'Status & Presence', type: 'string', default: false },
-        { id: 'presence.presenceDefinition.id', label: 'Presence Definition ID', category: 'Status & Presence', type: 'string', default: false },
-        { id: 'presence.presenceDefinition.systemPresence', label: 'System Presence', category: 'Status & Presence', type: 'string', default: true },
-        { id: 'presence.presenceDefinition.selfUri', label: 'Presence Definition URI', category: 'Status & Presence', type: 'string', default: false },
-        { id: 'presence.message', label: 'Presence Message', category: 'Status & Presence', type: 'string', default: false },
-        { id: 'presence.modifiedDate', label: 'Presence Modified Date', category: 'Status & Presence', type: 'date', default: false },
-        { id: 'outOfOffice.active', label: 'Out of Office Active', category: 'Status & Presence', type: 'boolean', default: false },
-        { id: 'outOfOffice.indefinite', label: 'Out of Office Indefinite', category: 'Status & Presence', type: 'boolean', default: false },
-        { id: 'acdAutoAnswer', label: 'ACD Auto Answer', category: 'Status & Presence', type: 'boolean', default: false },
+        // Biography & Dates Category
+        { id: 'biography.biography', label: 'Biography', category: 'Biography & Dates', type: 'string', default: false },
+        { id: 'dateLastLogin', label: 'Last Login Date', category: 'Biography & Dates', type: 'date', default: true },
+        { id: 'dateWelcomeSent', label: 'Welcome Sent Date', category: 'Biography & Dates', type: 'date', default: false },
+        { id: 'daysSinceLastLogin', label: 'Days Since Login', category: 'Biography & Dates', type: 'number', default: true },
         
-        // Authorization & Roles Category
-        { id: 'authorization.roles.id', label: 'Role IDs', category: 'Authorization & Roles', type: 'array', default: false },
-        { id: 'authorization.roles.name', label: 'Roles', category: 'Authorization & Roles', type: 'array', default: true },
-        { id: 'authorization.unusedRoles.id', label: 'Unused Role IDs', category: 'Authorization & Roles', type: 'array', default: false },
-        { id: 'authorization.unusedRoles.name', label: 'Unused Roles', category: 'Authorization & Roles', type: 'array', default: false },
-        { id: 'authorization.permissions', label: 'Permissions', category: 'Authorization & Roles', type: 'array', default: false },
-        { id: 'authorization.permissionPolicies.domain', label: 'Permission Domain', category: 'Authorization & Roles', type: 'string', default: false },
-        { id: 'authorization.permissionPolicies.entityName', label: 'Permission Entity Name', category: 'Authorization & Roles', type: 'string', default: false },
-        { id: 'authorization.permissionPolicies.allowConditions', label: 'Allow Conditions', category: 'Authorization & Roles', type: 'boolean', default: false },
-        { id: 'authorization.permissionPolicies.actionSet', label: 'Action Set', category: 'Authorization & Roles', type: 'array', default: false },
-        
-        // Skills & Certifications Category
-        { id: 'certifications', label: 'Certifications', category: 'Skills & Certifications', type: 'array', default: false },
-        { id: 'profileSkills', label: 'Profile Skills', category: 'Skills & Certifications', type: 'array', default: false },
-        { id: 'skills.id', label: 'Skill IDs', category: 'Skills & Certifications', type: 'array', default: false },
-        { id: 'skills.name', label: 'Skills', category: 'Skills & Certifications', type: 'array', default: true },
-        { id: 'skills.proficiency', label: 'Skill Proficiency', category: 'Skills & Certifications', type: 'number', default: false },
-        { id: 'skills.state', label: 'Skill State', category: 'Skills & Certifications', type: 'string', default: false },
-        { id: 'languages', label: 'Languages', category: 'Skills & Certifications', type: 'array', default: false },
-        
-        // Organization & Groups Category
-        { id: 'locations', label: 'Locations', category: 'Organization & Groups', type: 'array', default: false },
-        { id: 'groups.id', label: 'Group IDs', category: 'Organization & Groups', type: 'array', default: false },
-        { id: 'team.id', label: 'Team ID', category: 'Organization & Groups', type: 'string', default: false },
-        { id: 'team.name', label: 'Team', category: 'Organization & Groups', type: 'string', default: true },
-        { id: 'team.selfUri', label: 'Team URI', category: 'Organization & Groups', type: 'string', default: false },
-        
-        // Work & Scheduling Category
-        { id: 'workPlanBidRanks.id', label: 'Work Plan Bid Ranks', category: 'Work & Scheduling', type: 'array', default: false },
-        
-        // External Contacts Category
-        { id: 'externalContactsSettings.manuallyAssignDivisionsToInteractions', label: 'Manual Division Assignment to Interactions', category: 'External Contacts', type: 'boolean', default: false },
-        { id: 'externalContactsSettings.manuallyAssignDivisionsToContacts', label: 'Manual Division Assignment to Contacts', category: 'External Contacts', type: 'boolean', default: false },
-        
-        // Token & Login Category
-        { id: 'lastTokenIssued.dateIssued', label: 'Last Token Issued Date', category: 'Token & Login', type: 'date', default: false },
-        { id: 'dateLastLogin', label: 'Last Login Date', category: 'Token & Login', type: 'date', default: true },
-        { id: 'dateWelcomeSent', label: 'Welcome Sent Date', category: 'Token & Login', type: 'date', default: false },
-        
-        // Calculated Fields (not from API directly)
-        { id: 'daysSinceLastLogin', label: 'Days Since Login', category: 'Calculated Fields', type: 'number', default: true },
-        { id: 'queues', label: 'Queues', category: 'Calculated Fields', type: 'array', default: true }
+        // Queues Category
+        { id: 'queues', label: 'Queues', category: 'Queues', type: 'array', default: true }
       ];
       
       // Load saved column preferences from localStorage
@@ -1614,38 +1592,14 @@
         const progressContainer = document.getElementById('progressContainer');
         progressContainer.style.display = 'block';
         
-        // Updated expand fields to include ALL fields from the column list
+        // SIMPLIFIED expand fields - start with basics
         const expandFields = [
           'routingStatus',
           'presence',
-          'integrationPresence',
-          'conversationSummary',
-          'outOfOffice',
-          'geolocation',
-          'station',
           'authorization',
-          'lasttokenissued',
-          'authorization.unusedRoles',
-          'authorization.permissionPolicies',
           'team',
-          'workPlanBidRanks',
-          'externalContactsSettings',
-          'groups',
-          'customAttributes',
-          'profileSkills',
-          'certifications',
           'skills',
-          'languages',
-          'languagePreference',
-          'employerInfo',
-          'biography',
-          'dateLastLogin',
-          'dateWelcomeSent',
-          'division',
-          'addresses',
-          'primaryContactInfo',
-          'locations',
-          'manager'
+          'dateLastLogin'
         ].join(',');
 
         let allUsers = [];
@@ -1676,12 +1630,15 @@
             const data = await res.json();
             const users = data.entities || [];
             
+            console.log(`Page ${page}: Loaded ${users.length} users`);
+            
             const validUsers = users.filter(u => 
               u.name && u.name.trim() && u.name !== 'Unknown User'
             );
             
+            console.log(`Page ${page}: ${validUsers.length} valid users`);
+            
             validUsers.forEach(user => {
-              // Calculate days since last login
               if (user.dateLastLogin) {
                 const lastLogin = new Date(user.dateLastLogin);
                 const today = new Date();
@@ -1691,111 +1648,24 @@
                 user.daysSinceLastLogin = 999;
               }
               
-              // Extract roles names
               if (user.authorization && user.authorization.roles) {
                 user.roles = user.authorization.roles.map(r => r.name);
               } else {
                 user.roles = [];
               }
               
-              // Extract skill names and other skill data
-              if (user.skills) {
-                user.skillIds = user.skills.map(s => s.id);
-                user.skillNames = user.skills.map(s => s.name);
-                user.skillProficiencies = user.skills.map(s => s.proficiency || 0);
-                user.skillStates = user.skills.map(s => s.state || '');
-              }
-              
-              // Extract group IDs
-              if (user.groups) {
-                user.groupIds = user.groups.map(g => g.id);
-              }
-              
-              // Extract work plan bid rank IDs
-              if (user.workPlanBidRanks) {
-                user.workPlanBidRankIds = user.workPlanBidRanks.map(w => w.id);
-              }
-              
-              // Extract certification names
-              if (user.certifications) {
-                user.certificationNames = user.certifications.map(c => c.name || c);
-              }
-              
-              // Extract profile skill names
-              if (user.profileSkills) {
-                user.profileSkillNames = user.profileSkills.map(p => p.name || p);
-              }
-              
-              // Extract language names
-              if (user.languages) {
-                user.languageNames = user.languages.map(l => l.name || l);
-              }
-              
-              // Handle date fields
-              if (user.employerInfo && user.employerInfo.dateHire) {
-                user.employerInfo.dateHire = new Date(user.employerInfo.dateHire).toISOString();
-              }
-              
-              if (user.lastTokenIssued && user.lastTokenIssued.dateIssued) {
-                user.lastTokenIssued.dateIssued = new Date(user.lastTokenIssued.dateIssued).toISOString();
-              }
-              
-              // Format presence data
-              if (user.presence && user.presence.presenceDefinition) {
-                user.presenceDefinitionId = user.presence.presenceDefinition.id;
-                user.systemPresence = user.presence.presenceDefinition.systemPresence;
-              }
-              
-              // Format routing status
-              if (user.routingStatus && user.routingStatus.startTime) {
-                user.routingStatus.startTime = new Date(user.routingStatus.startTime).toISOString();
-              }
-              
-              if (user.presence && user.presence.modifiedDate) {
-                user.presence.modifiedDate = new Date(user.presence.modifiedDate).toISOString();
-              }
-              
-              // Handle addresses array
-              if (user.addresses && Array.isArray(user.addresses)) {
-                // Take the first address if available
-                if (user.addresses.length > 0) {
-                  const primaryAddress = user.addresses[0];
-                  user.address = primaryAddress.address || '';
-                  user.addressDisplay = primaryAddress.display || '';
-                  user.addressMediaType = primaryAddress.mediaType || '';
-                  user.addressType = primaryAddress.type || '';
-                  user.addressExtension = primaryAddress.extension || '';
-                  user.addressCountryCode = primaryAddress.countryCode || '';
-                }
-              }
-              
-              // Handle primary contact info
-              if (user.primaryContactInfo) {
-                user.primaryAddress = user.primaryContactInfo.address || '';
-                user.primaryMediaType = user.primaryContactInfo.mediaType || '';
-                user.primaryType = user.primaryContactInfo.type || '';
-              }
-              
-              // Extract permission policies data
-              if (user.authorization && user.authorization.permissionPolicies) {
-                if (Array.isArray(user.authorization.permissionPolicies) && user.authorization.permissionPolicies.length > 0) {
-                  const policy = user.authorization.permissionPolicies[0];
-                  user.permissionDomain = policy.domain || '';
-                  user.permissionEntityName = policy.entityName || '';
-                  user.permissionAllowConditions = policy.allowConditions || false;
-                  user.permissionActionSet = policy.actionSet || [];
-                }
-              }
-              
-              // Extract permissions
-              if (user.authorization && user.authorization.permissions) {
-                user.permissions = user.authorization.permissions || [];
-              }
-              
-              // Extract unused roles
-              if (user.authorization && user.authorization.unusedRoles) {
-                user.unusedRoleIds = user.authorization.unusedRoles.map(r => r.id);
-                user.unusedRoleNames = user.authorization.unusedRoles.map(r => r.name);
+              // Log a sample user for debugging
+              if (page === 1 && validUsers.indexOf(user) === 0) {
+                console.log('Sample user data:', {
+                  name: user.name,
+                  email: user.email,
+                  roles: user.roles,
+                  routingStatus: user.routingStatus,
+                  presence: user.presence,
+                  team: user.team,
+                  skills: user.skills,
+                  dateLastLogin: user.dateLastLogin
+                });
               }
             });
             
@@ -1829,6 +1699,8 @@
         }
         
         availableUsers = allUsers;
+        
+        console.log(`Total loaded: ${availableUsers.length} users`);
         
         progressContainer.style.display = 'none';
         
@@ -1965,10 +1837,10 @@
       
       clearFilters();
       
-      const rolesFilter = document.querySelector('.column-filter[data-column="authorization.roles.name"]');
+      const rolesFilter = document.querySelector('.column-filter[data-column="roles"]');
       if (rolesFilter) {
         rolesFilter.value = roleName;
-        filters['authorization.roles.name'] = roleName;
+        filters['roles'] = roleName;
       }
       
       applyFilters();
@@ -2002,10 +1874,10 @@
         roleName,
         user.routingStatus?.status || '',
         user.team?.name || '',
-        user.presence?.presenceDefinition?.systemPresence || user.systemPresence || '',
+        user.presence?.presenceDefinition?.systemPresence || '',
         user.dateLastLogin ? new Date(user.dateLastLogin).toISOString() : '',
         user.daysSinceLastLogin || 0,
-        user.skillNames?.join('; ') || user.skills?.map(s => s.name).join('; ') || '',
+        user.skills?.map(s => s.name).join('; ') || '',
         user.id || ''
       ]);
       
@@ -2269,6 +2141,8 @@
       const end = start + pageSize;
       const pageUsers = sortUsers([...filteredUsers]).slice(start, end);
       
+      console.log(`Rendering table: ${pageUsers.length} users, visible columns:`, visibleColumns);
+      
       if (pageUsers.length === 0) {
         tbody.innerHTML = `<tr><td colspan="${visibleColumns.length}" style="text-align:center;padding:40px;color:var(--text-light)}">
           No users found. Try adjusting your filters or click "Load Users".
@@ -2284,8 +2158,8 @@
         const rowCells = visibleColumns.map(columnId => {
           let cellValue = getNestedValue(user, columnId);
           
-          if (columnId === 'skills.name') {
-            const skills = user.skillNames || user.skills?.map(s => s.name) || [];
+          if (columnId === 'skills') {
+            const skills = user.skills?.map(s => s.name) || [];
             return `
               <td>
                 <div class="skills-list" title="${skills.join(', ') || 'None'}">
@@ -2310,7 +2184,7 @@
             `;
           }
           
-          if (columnId === 'authorization.roles.name') {
+          if (columnId === 'roles') {
             const roles = user.roles || [];
             return `
               <td>
@@ -2325,7 +2199,7 @@
           
           if (columnId === 'routingStatus.status') {
             const status = cellValue || 'UNKNOWN';
-            const presence = user.presence?.presenceDefinition?.systemPresence || user.systemPresence || 'Offline';
+            const presence = user.presence?.presenceDefinition?.systemPresence || 'Offline';
             const statusClass = getStatusClass(presence);
             return `
               <td>
@@ -2336,7 +2210,7 @@
           }
           
           if (columnId === 'presence.presenceDefinition.systemPresence') {
-            const presence = cellValue || user.systemPresence || 'Offline';
+            const presence = cellValue || 'Offline';
             const statusClass = getStatusClass(presence);
             return `<td><span class="status-badge ${statusClass}">${presence}</span></td>`;
           }
@@ -2367,149 +2241,12 @@
             return `<td><strong>${cellValue || 'Unknown'}</strong></td>`;
           }
           
-          if (columnId === 'id') {
-            return `<td><small style="color: var(--text-light);">${cellValue || ''}</small></td>`;
-          }
-          
-          // Date formatting for various date fields
-          if (columnId === 'employerInfo.dateHire' || 
-              columnId === 'lastTokenIssued.dateIssued' ||
-              columnId === 'routingStatus.startTime' ||
-              columnId === 'presence.modifiedDate' ||
-              columnId === 'dateWelcomeSent') {
-            if (!cellValue) return `<td></td>`;
-            try {
-              const date = new Date(cellValue);
-              return `<td>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>`;
-            } catch (e) {
-              return `<td>${cellValue || ''}</td>`;
-            }
-          }
-          
-          // Handle boolean fields
-          if (columnId === 'outOfOffice.active' || 
-              columnId === 'outOfOffice.indefinite' ||
-              columnId === 'acdAutoAnswer' ||
-              columnId === 'externalContactsSettings.manuallyAssignDivisionsToInteractions' ||
-              columnId === 'externalContactsSettings.manuallyAssignDivisionsToContacts' ||
-              columnId === 'authorization.permissionPolicies.allowConditions') {
-            if (cellValue === true) return `<td style="text-align:center;"><span style="color:green;">✓</span></td>`;
-            if (cellValue === false) return `<td style="text-align:center;"><span style="color:red;">✗</span></td>`;
-            return `<td></td>`;
-          }
-          
-          // Handle arrays
-          if (columnId === 'certifications' || 
-              columnId === 'profileSkills' ||
-              columnId === 'languages' ||
-              columnId === 'authorization.permissions' ||
-              columnId === 'authorization.permissionPolicies.actionSet') {
-            const arrayValue = Array.isArray(cellValue) ? cellValue : [];
-            if (arrayValue.length === 0) return `<td></td>`;
-            return `<td title="${arrayValue.join(', ')}">${arrayValue.slice(0, 3).join(', ')}${arrayValue.length > 3 ? '...' : ''}</td>`;
-          }
-          
-          // Handle specific array columns that were extracted
-          if (columnId === 'skills.id') {
-            const skills = user.skillIds || [];
-            return `<td title="${skills.join(', ')}">${skills.slice(0, 3).join(', ')}${skills.length > 3 ? '...' : ''}</td>`;
-          }
-          
-          if (columnId === 'skills.proficiency') {
-            const proficiencies = user.skillProficiencies || [];
-            return `<td>${proficiencies.join(', ')}</td>`;
-          }
-          
-          if (columnId === 'skills.state') {
-            const states = user.skillStates || [];
-            return `<td>${states.join(', ')}</td>`;
-          }
-          
-          if (columnId === 'groups.id') {
-            const groups = user.groupIds || [];
-            return `<td title="${groups.join(', ')}">${groups.slice(0, 3).join(', ')}${groups.length > 3 ? '...' : ''}</td>`;
-          }
-          
-          if (columnId === 'workPlanBidRanks.id') {
-            const ranks = user.workPlanBidRankIds || [];
-            return `<td title="${ranks.join(', ')}">${ranks.slice(0, 3).join(', ')}${ranks.length > 3 ? '...' : ''}</td>`;
-          }
-          
-          if (columnId === 'authorization.unusedRoles.id') {
-            const unusedRoles = user.unusedRoleIds || [];
-            return `<td title="${unusedRoles.join(', ')}">${unusedRoles.slice(0, 3).join(', ')}${unusedRoles.length > 3 ? '...' : ''}</td>`;
-          }
-          
-          if (columnId === 'authorization.unusedRoles.name') {
-            const unusedRoles = user.unusedRoleNames || [];
-            return `<td title="${unusedRoles.join(', ')}">${unusedRoles.slice(0, 3).join(', ')}${unusedRoles.length > 3 ? '...' : ''}</td>`;
-          }
-          
-          // Handle address fields
-          if (columnId === 'addresses.address') {
-            return `<td>${user.address || ''}</td>`;
-          }
-          
-          if (columnId === 'addresses.display') {
-            return `<td>${user.addressDisplay || ''}</td>`;
-          }
-          
-          if (columnId === 'addresses.mediaType') {
-            return `<td>${user.addressMediaType || ''}</td>`;
-          }
-          
-          if (columnId === 'addresses.type') {
-            return `<td>${user.addressType || ''}</td>`;
-          }
-          
-          if (columnId === 'addresses.extension') {
-            return `<td>${user.addressExtension || ''}</td>`;
-          }
-          
-          if (columnId === 'addresses.countryCode') {
-            return `<td>${user.addressCountryCode || ''}</td>`;
-          }
-          
-          // Handle primary contact info
-          if (columnId === 'primaryContactInfo.address') {
-            return `<td>${user.primaryAddress || ''}</td>`;
-          }
-          
-          if (columnId === 'primaryContactInfo.mediaType') {
-            return `<td>${user.primaryMediaType || ''}</td>`;
-          }
-          
-          if (columnId === 'primaryContactInfo.type') {
-            return `<td>${user.primaryType || ''}</td>`;
-          }
-          
-          // Handle permission policies
-          if (columnId === 'authorization.permissionPolicies.domain') {
-            return `<td>${user.permissionDomain || ''}</td>`;
-          }
-          
-          if (columnId === 'authorization.permissionPolicies.entityName') {
-            return `<td>${user.permissionEntityName || ''}</td>`;
-          }
-          
-          // Handle manager
-          if (columnId === 'manager') {
-            if (typeof cellValue === 'object' && cellValue !== null) {
-              return `<td>${cellValue.name || JSON.stringify(cellValue)}</td>`;
-            }
-            return `<td>${cellValue || ''}</td>`;
-          }
-          
           if (Array.isArray(cellValue)) {
-            return `<td title="${cellValue.join(', ')}">${cellValue.slice(0, 3).join(', ')}${cellValue.length > 3 ? '...' : ''}</td>`;
+            return `<td>${cellValue.join(', ') || ''}</td>`;
           }
           
           if (typeof cellValue === 'object' && cellValue !== null) {
-            try {
-              return `<td title="${JSON.stringify(cellValue)}">${JSON.stringify(cellValue).slice(0, 50)}${JSON.stringify(cellValue).length > 50 ? '...' : ''}</td>`;
-            } catch (e) {
-              return `<td>[Object]</td>`;
-            }
+            return `<td>${JSON.stringify(cellValue)}</td>`;
           }
           
           return `<td>${cellValue || ''}</td>`;
@@ -3068,7 +2805,7 @@
       
       tbody.innerHTML = inactiveUsers.map((user, index) => {
         const status = user.routingStatus?.status || 'UNKNOWN';
-        const presence = user.presence?.presenceDefinition?.systemPresence || user.systemPresence || 'Offline';
+        const presence = user.presence?.presenceDefinition?.systemPresence || 'Offline';
         const team = user.team?.name || 'Unassigned';
         const lastLogin = user.dateLastLogin ? 
           new Date(user.dateLastLogin).toLocaleDateString() + ' ' + 
@@ -3284,30 +3021,18 @@
         const row = visibleColumns.map(columnId => {
           let value = getNestedValue(user, columnId);
           
-          if (columnId === 'skills.name') {
-            const skills = user.skillNames || user.skills?.map(s => s.name) || [];
+          if (columnId === 'skills') {
+            const skills = user.skills?.map(s => s.name) || [];
             return skills.join('; ');
           }
           
-          if (columnId === 'authorization.roles.name') {
+          if (columnId === 'roles') {
             const roles = user.roles || [];
             return roles.join('; ');
           }
           
           if (columnId === 'dateLastLogin' && value) {
             return new Date(value).toISOString();
-          }
-          
-          // Handle date fields in CSV export
-          if (columnId === 'employerInfo.dateHire' || 
-              columnId === 'lastTokenIssued.dateIssued' ||
-              columnId === 'routingStatus.startTime' ||
-              columnId === 'presence.modifiedDate' ||
-              columnId === 'dateWelcomeSent') {
-            if (value) {
-              return new Date(value).toISOString();
-            }
-            return '';
           }
           
           if (Array.isArray(value)) {
@@ -3362,7 +3087,7 @@
         user.team?.name || '',
         user.dateLastLogin ? new Date(user.dateLastLogin).toISOString() : '',
         user.daysSinceLastLogin || 0,
-        user.presence?.presenceDefinition?.systemPresence || user.systemPresence || '',
+        user.presence?.presenceDefinition?.systemPresence || '',
         user.id || ''
       ]);
       
