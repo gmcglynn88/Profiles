@@ -71,12 +71,13 @@
       border-radius: 8px;
       border: 1px solid var(--border-color);
       background: var(--card-bg);
+      position: relative;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      table-layout: auto;
+      table-layout: fixed;
     }
 
     th {
@@ -87,6 +88,10 @@
       top: 0;
       z-index: 10;
       white-space: nowrap;
+      position: relative;
+      user-select: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     th, td {
@@ -95,7 +100,66 @@
       text-align: left;
       vertical-align: top;
       font-size: 13px;
+    }
+
+    /* Column-specific wrapping */
+    td:nth-child(1), th:nth-child(1) { /* Name */
       white-space: nowrap;
+      width: 150px;
+    }
+    
+    td:nth-child(2), th:nth-child(2) { /* Email */
+      white-space: nowrap;
+      width: 200px;
+    }
+    
+    td:nth-child(3), th:nth-child(3) { /* Role */
+      white-space: normal;
+      width: 150px;
+      min-width: 100px;
+      max-width: 200px;
+    }
+    
+    td:nth-child(4), th:nth-child(4) { /* Status */
+      white-space: nowrap;
+      width: 120px;
+    }
+    
+    td:nth-child(5), th:nth-child(5) { /* Team */
+      white-space: nowrap;
+      width: 150px;
+    }
+    
+    td:nth-child(6), th:nth-child(6) { /* Presence */
+      white-space: nowrap;
+      width: 100px;
+    }
+    
+    td:nth-child(7), th:nth-child(7) { /* Last Login */
+      white-space: nowrap;
+      width: 150px;
+    }
+    
+    td:nth-child(8), th:nth-child(8) { /* Days Since Login */
+      white-space: nowrap;
+      width: 120px;
+      text-align: center;
+    }
+    
+    td:nth-child(9), th:nth-child(9) { /* Skills */
+      white-space: normal;
+      word-wrap: break-word;
+      width: 200px;
+      min-width: 150px;
+      max-width: 300px;
+    }
+    
+    td:nth-child(10), th:nth-child(10) { /* Queues */
+      white-space: normal;
+      word-wrap: break-word;
+      width: 200px;
+      min-width: 150px;
+      max-width: 300px;
     }
 
     tr:hover {
@@ -364,7 +428,6 @@
     }
 
     .queues-list {
-      max-width: 300px;
       max-height: 100px;
       overflow-y: auto;
       padding: 5px;
@@ -380,6 +443,52 @@
       margin: 2px;
       border-radius: 3px;
       font-size: 11px;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .skills-list {
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .skills-list span {
+      display: inline-block;
+      background: var(--light-bg);
+      padding: 2px 6px;
+      margin: 2px;
+      border-radius: 3px;
+      font-size: 11px;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    /* Column Resizing */
+    .resizer {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: 5px;
+      background: transparent;
+      cursor: col-resize;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .resizer:hover,
+    .resizer.resizing {
+      background: var(--secondary-color);
+    }
+
+    .resizer::after {
+      content: '';
+      position: absolute;
+      right: 2px;
+      top: 0;
+      height: 100%;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.3);
     }
 
     @media (max-width: 1200px) {
@@ -528,6 +637,7 @@
           <button id="refreshData" class="action-btn">Refresh Data</button>
           <button id="exportCSV" class="action-btn export-btn">Export to CSV</button>
           <button id="clearFilters" class="action-btn" style="background: var(--danger);">Clear Filters</button>
+          <button id="resetColumnWidths" class="action-btn" style="background: var(--warning); color: #000;">Reset Column Sizes</button>
           <select id="pageSize" style="margin-left: auto; width: auto;">
             <option value="25">25 per page</option>
             <option value="50" selected>50 per page</option>
@@ -648,6 +758,7 @@
       <div class="card">
         <div class="action-buttons">
           <button id="exportInactiveCSV" class="action-btn export-btn">Export Inactive Users to CSV</button>
+          <button id="resetInactiveColumnWidths" class="action-btn" style="background: var(--warning); color: #000;">Reset Column Sizes</button>
         </div>
 
         <div class="stats-bar" id="inactiveStatsBar">
@@ -710,6 +821,14 @@
     let filteredUsers = [];
     
     let inactiveUsers = [];
+    
+    // Column resizing variables
+    let activeResizer = null;
+    let startX = 0;
+    let startWidth = 0;
+    let columnIndex = 0;
+    let tableElement = null;
+    let originalWidths = {};
     
     const MAX_PAGE_SIZE = 100;
     const REQUEST_DELAY = 200;
@@ -895,7 +1014,7 @@
         );
         const data = await response.json();
         const queues = data.entities || [];
-        const queueNames = queues.map(q => q.name).slice(0, 5); // Limit to 5 queues
+        const queueNames = queues.map(q => q.name).slice(0, 10); // Limit to 10 queues
         userQueuesCache.set(userId, queueNames);
         return queueNames;
       } catch (error) {
@@ -1028,6 +1147,11 @@
         availableUsers = allUsers;
         
         progressContainer.style.display = 'none';
+        
+        // Initialize column resizing after users are loaded
+        if (tableElement) {
+          setupColumnResizing(tableElement);
+        }
         
         applyFilters();
         renderTable();
@@ -1184,7 +1308,7 @@
           new Date(user.dateLastLogin).toLocaleDateString() + ' ' + 
           new Date(user.dateLastLogin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
           : 'Never';
-        const skills = user.skills?.map(s => s.name).slice(0, 3).join(', ') || 'None';
+        const skills = user.skills?.map(s => s.name) || [];
         const daysSinceLogin = user.daysSinceLastLogin || 0;
         const roles = user.roles || 'No role';
         const userQueues = queuesList[index] || [];
@@ -1203,7 +1327,7 @@
           <tr>
             <td><strong>${user.name || 'Unknown'}</strong></td>
             <td>${user.email || 'No email'}</td>
-            <td title="${user.roles}">${roles.length > 30 ? roles.substring(0, 30) + '...' : roles}</td>
+            <td title="${user.roles}">${roles.length > 50 ? roles.substring(0, 50) + '...' : roles}</td>
             <td>
               <span class="status-badge ${statusClass}">${presence}</span><br>
               <small class="muted">${status}</small>
@@ -1212,11 +1336,18 @@
             <td>${presence}</td>
             <td>${lastLogin}</td>
             <td style="text-align:center;" ${daysClass}>${daysSinceLogin === 999 ? 'Never' : daysSinceLogin}</td>
-            <td title="${user.skills?.map(s => s.name).join(', ') || 'None'}">${skills}${user.skills?.length > 3 ? '...' : ''}</td>
+            <td>
+              <div class="skills-list" title="${skills.join(', ') || 'None'}">
+                ${skills.slice(0, 5).map(skill => `<span>${skill}</span>`).join('')}
+                ${skills.length > 5 ? '<span>...</span>' : ''}
+                ${skills.length === 0 ? '<span style="color: var(--text-light);">None</span>' : ''}
+              </div>
+            </td>
             <td>
               <div class="queues-list" title="${userQueues.join(', ')}">
-                ${userQueues.map(queue => `<span>${queue}</span>`).join('')}
-                ${userQueues.length === 0 ? 'None' : ''}
+                ${userQueues.slice(0, 5).map(queue => `<span>${queue}</span>`).join('')}
+                ${userQueues.length > 5 ? '<span>...</span>' : ''}
+                ${userQueues.length === 0 ? '<span style="color: var(--text-light);">None</span>' : ''}
               </div>
             </td>
           </tr>
@@ -1268,6 +1399,180 @@
       document.getElementById('activeUsers').textContent = active;
       document.getElementById('awayUsers').textContent = away;
       document.getElementById('busyUsers').textContent = busy;
+    }
+
+    // Column Resizing Functions
+    function setupColumnResizing(table) {
+      tableElement = table;
+      const headers = table.querySelectorAll('thead tr:first-child th');
+      
+      // Store original widths
+      headers.forEach((header, index) => {
+        originalWidths[index] = getComputedStyle(header).width;
+      });
+      
+      // Add resizer to each header
+      headers.forEach((header, index) => {
+        const resizer = document.createElement('div');
+        resizer.classList.add('resizer');
+        resizer.dataset.index = index;
+        header.appendChild(resizer);
+        
+        // Make header position relative if not already
+        header.style.position = 'relative';
+        
+        // Add event listeners for resizing
+        resizer.addEventListener('mousedown', startResize);
+        resizer.addEventListener('touchstart', startResizeTouch);
+      });
+      
+      // Setup resizing for inactive users table too
+      const inactiveTable = document.getElementById('inactiveUsersTable');
+      if (inactiveTable) {
+        setupInactiveColumnResizing(inactiveTable);
+      }
+    }
+    
+    function setupInactiveColumnResizing(table) {
+      const headers = table.querySelectorAll('thead tr:first-child th');
+      
+      headers.forEach((header, index) => {
+        const resizer = document.createElement('div');
+        resizer.classList.add('resizer');
+        resizer.dataset.index = index;
+        header.appendChild(resizer);
+        
+        header.style.position = 'relative';
+        
+        resizer.addEventListener('mousedown', startResize);
+        resizer.addEventListener('touchstart', startResizeTouch);
+      });
+    }
+    
+    function startResize(e) {
+      activeResizer = e.target;
+      columnIndex = parseInt(activeResizer.dataset.index);
+      startX = e.pageX;
+      
+      const header = activeResizer.parentElement;
+      startWidth = header.getBoundingClientRect().width;
+      
+      activeResizer.classList.add('resizing');
+      
+      document.addEventListener('mousemove', resize);
+      document.addEventListener('mouseup', stopResize);
+    }
+    
+    function startResizeTouch(e) {
+      e.preventDefault();
+      activeResizer = e.target;
+      columnIndex = parseInt(activeResizer.dataset.index);
+      startX = e.touches[0].pageX;
+      
+      const header = activeResizer.parentElement;
+      startWidth = header.getBoundingClientRect().width;
+      
+      activeResizer.classList.add('resizing');
+      
+      document.addEventListener('touchmove', resizeTouch);
+      document.addEventListener('touchend', stopResize);
+    }
+    
+    function resize(e) {
+      if (!activeResizer) return;
+      
+      const dx = e.pageX - startX;
+      const newWidth = Math.max(50, startWidth + dx); // Minimum 50px
+      
+      const header = activeResizer.parentElement;
+      const table = header.closest('table');
+      const headers = table.querySelectorAll('thead tr:first-child th');
+      const cells = table.querySelectorAll(`tbody tr td:nth-child(${columnIndex + 1})`);
+      
+      // Update header and all cells in the column
+      header.style.width = `${newWidth}px`;
+      cells.forEach(cell => {
+        cell.style.width = `${newWidth}px`;
+      });
+    }
+    
+    function resizeTouch(e) {
+      if (!activeResizer) return;
+      
+      const dx = e.touches[0].pageX - startX;
+      const newWidth = Math.max(50, startWidth + dx);
+      
+      const header = activeResizer.parentElement;
+      const table = header.closest('table');
+      const headers = table.querySelectorAll('thead tr:first-child th');
+      const cells = table.querySelectorAll(`tbody tr td:nth-child(${columnIndex + 1})`);
+      
+      header.style.width = `${newWidth}px`;
+      cells.forEach(cell => {
+        cell.style.width = `${newWidth}px`;
+      });
+    }
+    
+    function stopResize() {
+      if (!activeResizer) return;
+      
+      activeResizer.classList.remove('resizing');
+      activeResizer = null;
+      
+      document.removeEventListener('mousemove', resize);
+      document.removeEventListener('mouseup', stopResize);
+      document.removeEventListener('touchmove', resizeTouch);
+      document.removeEventListener('touchend', stopResize);
+    }
+    
+    function resetColumnWidths() {
+      const table = document.getElementById('usersTable');
+      const headers = table.querySelectorAll('thead tr:first-child th');
+      const rows = table.querySelectorAll('tbody tr');
+      
+      headers.forEach((header, index) => {
+        const originalWidth = originalWidths[index];
+        if (originalWidth) {
+          header.style.width = originalWidth;
+          
+          // Reset all cells in this column
+          rows.forEach(row => {
+            const cell = row.querySelector(`td:nth-child(${index + 1})`);
+            if (cell) {
+              cell.style.width = originalWidth;
+            }
+          });
+        } else {
+          // If no original width stored, remove inline style
+          header.style.width = '';
+          rows.forEach(row => {
+            const cell = row.querySelector(`td:nth-child(${index + 1})`);
+            if (cell) {
+              cell.style.width = '';
+            }
+          });
+        }
+      });
+      
+      showMessage('Column sizes reset to default', 'success');
+    }
+    
+    function resetInactiveColumnWidths() {
+      const table = document.getElementById('inactiveUsersTable');
+      const headers = table.querySelectorAll('thead tr:first-child th');
+      const rows = table.querySelectorAll('tbody tr');
+      
+      headers.forEach((header, index) => {
+        header.style.width = '';
+        rows.forEach(row => {
+          const cell = row.querySelector(`td:nth-child(${index + 1})`);
+          if (cell) {
+            cell.style.width = '';
+          }
+        });
+      });
+      
+      showMessage('Inactive users column sizes reset', 'success');
     }
 
     let teamDropdown, managementUnitDropdown;
@@ -1515,6 +1820,7 @@
         const daysSinceLogin = user.daysSinceLastLogin || 0;
         const roles = user.roles || 'No role';
         const userQueues = index < queuesList.length ? queuesList[index] : [];
+        const skills = user.skills?.map(s => s.name) || [];
         
         let statusClass = 'status-offline';
         if (presence === 'Available') statusClass = 'status-online';
@@ -1530,15 +1836,16 @@
           <tr>
             <td><strong>${user.name || 'Unknown'}</strong></td>
             <td>${user.email || 'No email'}</td>
-            <td title="${user.roles}">${roles.length > 30 ? roles.substring(0, 30) + '...' : roles}</td>
+            <td title="${user.roles}">${roles.length > 50 ? roles.substring(0, 50) + '...' : roles}</td>
             <td>${team}</td>
             <td>${lastLogin}</td>
             <td style="text-align:center;" ${daysClass}>${daysSinceLogin === 999 ? 'Never' : daysSinceLogin}</td>
             <td><span class="status-badge ${statusClass}">${presence}</span></td>
             <td>
               <div class="queues-list" title="${userQueues.join(', ')}">
-                ${userQueues.map(queue => `<span>${queue}</span>`).join('')}
-                ${userQueues.length === 0 ? 'None' : ''}
+                ${userQueues.slice(0, 5).map(queue => `<span>${queue}</span>`).join('')}
+                ${userQueues.length > 5 ? '<span>...</span>' : ''}
+                ${userQueues.length === 0 ? '<span style="color: var(--text-light);">None</span>' : ''}
               </div>
             </td>
           </tr>
@@ -1583,6 +1890,10 @@
       document.getElementById('exportInactiveCSV').addEventListener('click', exportInactiveToCSV);
       
       document.getElementById('clearFilters').addEventListener('click', clearFilters);
+      
+      document.getElementById('resetColumnWidths').addEventListener('click', resetColumnWidths);
+      
+      document.getElementById('resetInactiveColumnWidths').addEventListener('click', resetInactiveColumnWidths);
       
       document.getElementById('pageSize').addEventListener('change', function() {
         pageSize = parseInt(this.value);
