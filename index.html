@@ -98,7 +98,6 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      /* Remove table-layout: fixed to allow resizing */
     }
 
     th {
@@ -113,7 +112,7 @@
       user-select: none;
       overflow: hidden;
       text-overflow: ellipsis;
-      min-width: 80px; /* Minimum column width */
+      min-width: 80px;
     }
 
     th, td {
@@ -122,68 +121,6 @@
       text-align: left;
       vertical-align: top;
       font-size: 13px;
-    }
-
-    /* Default column widths */
-    th:nth-child(1), td:nth-child(1) { /* Name */
-      width: 150px;
-      min-width: 100px;
-      max-width: 250px;
-    }
-    
-    th:nth-child(2), td:nth-child(2) { /* Email */
-      width: 200px;
-      min-width: 150px;
-      max-width: 300px;
-    }
-    
-    th:nth-child(3), td:nth-child(3) { /* Role */
-      width: 200px;
-      min-width: 150px;
-      max-width: 400px;
-    }
-    
-    th:nth-child(4), td:nth-child(4) { /* Status */
-      width: 120px;
-      min-width: 100px;
-      max-width: 150px;
-    }
-    
-    th:nth-child(5), td:nth-child(5) { /* Team */
-      width: 150px;
-      min-width: 100px;
-      max-width: 200px;
-    }
-    
-    th:nth-child(6), td:nth-child(6) { /* Presence */
-      width: 100px;
-      min-width: 80px;
-      max-width: 120px;
-    }
-    
-    th:nth-child(7), td:nth-child(7) { /* Last Login */
-      width: 150px;
-      min-width: 120px;
-      max-width: 180px;
-    }
-    
-    th:nth-child(8), td:nth-child(8) { /* Days Since Login */
-      width: 120px;
-      min-width: 100px;
-      max-width: 150px;
-      text-align: center;
-    }
-    
-    th:nth-child(9), td:nth-child(9) { /* Skills */
-      width: 250px;
-      min-width: 150px;
-      max-width: 400px;
-    }
-    
-    th:nth-child(10), td:nth-child(10) { /* Queues */
-      width: 250px;
-      min-width: 150px;
-      max-width: 400px;
     }
 
     tr:hover {
@@ -228,7 +165,7 @@
       border: 1px solid var(--border-color);
       border-radius: 4px;
       background: var(--filter-bg);
-      box-sizing: border-box; /* Fix for filter row intrusion */
+      box-sizing: border-box;
     }
 
     .column-filter:focus {
@@ -237,7 +174,6 @@
       box-shadow: 0 0 0 2px rgba(99, 171, 143, 0.2);
     }
 
-    /* Fix for filter row */
     .filter-row th, .filter-row td {
       padding: 4px 6px !important;
       background-color: var(--filter-bg);
@@ -258,7 +194,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* Updated status color classes */
     .status-onqueue { background: var(--status-onqueue); color: var(--status-onqueue-text); }
     .status-offqueue { background: var(--status-offqueue); color: var(--status-offqueue-text); }
     .status-available { background: var(--status-available); color: var(--status-available-text); }
@@ -301,7 +236,7 @@
       display:flex;align-items:center;justify-content:space-between;
       border:1px solid var(--border-color);border-radius:6px;
       background:#fff;padding:10px;cursor:pointer;width:100%;
-      min-height: 42px; /* Fixed height for consistency */
+      min-height: 42px;
       box-sizing: border-box;
     }
     .cd-trigger .label{color:var(--text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
@@ -486,7 +421,6 @@
       flex: 1;
     }
 
-    /* Updated styles for Roles, Skills, and Queues */
     .roles-list, .skills-list, .queues-list {
       max-height: 100px;
       overflow-y: auto;
@@ -508,7 +442,6 @@
       max-width: 100%;
     }
 
-    /* Roles Tab Styles */
     .role-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -570,7 +503,6 @@
       flex: 1;
     }
 
-    /* Column Resizing */
     .resizer {
       position: absolute;
       right: 0;
@@ -599,8 +531,7 @@
       background: rgba(255, 255, 255, 0.3);
     }
 
-    /* Allow content wrapping in certain columns */
-    td:nth-child(3), td:nth-child(9), td:nth-child(10) { /* Role, Skills, Queues */
+    td:nth-child(3), td:nth-child(9), td:nth-child(10) {
       white-space: normal;
       word-wrap: break-word;
     }
@@ -679,6 +610,301 @@
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+
+    /* Column Manager Modal */
+    .column-manager-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+
+    .column-manager-modal.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .column-manager-content {
+      background: var(--card-bg);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-color);
+    }
+
+    .column-manager-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .column-manager-header h2 {
+      margin: 0;
+      color: var(--text-color);
+      font-size: 20px;
+    }
+
+    .close-column-manager {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--text-light);
+      cursor: pointer;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .close-column-manager:hover {
+      background: var(--light-bg);
+      color: var(--text-color);
+    }
+
+    .column-manager-body {
+      padding: 0 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .column-manager-search {
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      background: var(--card-bg);
+      z-index: 10;
+    }
+
+    .column-manager-search input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--light-bg);
+      color: var(--text-color);
+      font-size: 14px;
+    }
+
+    .column-manager-search input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(99, 171, 143, 0.2);
+    }
+
+    .column-manager-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .column-manager-actions button {
+      padding: 8px 16px;
+      border: 1px solid var(--border-color);
+      background: var(--light-bg);
+      color: var(--text-color);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .column-manager-actions button:hover {
+      background: var(--pill);
+    }
+
+    .columns-list-container {
+      padding-bottom: 20px;
+    }
+
+    .columns-category {
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .category-header {
+      padding: 12px 16px;
+      background: var(--light-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .category-header:hover {
+      background: var(--filter-bg);
+    }
+
+    .category-header h3 {
+      margin: 0;
+      font-size: 15px;
+      color: var(--text-color);
+      font-weight: 600;
+    }
+
+    .category-count {
+      background: var(--pill);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: 12px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    .category-content {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 10px;
+      background: var(--card-bg);
+    }
+
+    .column-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: var(--light-bg);
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .column-item:hover {
+      background: var(--pill);
+      transform: translateY(-1px);
+    }
+
+    .column-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--primary-color);
+    }
+
+    .column-label {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-color);
+      word-break: break-word;
+    }
+
+    .column-type {
+      font-size: 11px;
+      color: var(--text-light);
+      background: var(--filter-bg);
+      padding: 2px 6px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    .column-manager-footer {
+      padding: 20px 24px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .column-manager-footer button {
+      padding: 10px 24px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .save-columns-btn {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+    }
+
+    .save-columns-btn:hover {
+      background: var(--secondary-color);
+    }
+
+    .cancel-columns-btn {
+      background: var(--light-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+    }
+
+    .cancel-columns-btn:hover {
+      background: var(--filter-bg);
+    }
+
+    .type-string {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .type-number {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .type-boolean {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+
+    .type-date {
+      background: #f3e5f5;
+      color: #7b1fa2;
+    }
+
+    .type-object {
+      background: #fce4ec;
+      color: #c2185b;
+    }
+
+    .type-array {
+      background: #e8eaf6;
+      color: #3949ab;
+    }
+
+    .manage-columns-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--light-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-left: 10px;
+    }
+
+    .manage-columns-btn:hover {
+      background: var(--filter-bg);
     }
   </style>
 </head>
@@ -769,6 +995,9 @@
           <button id="exportCSV" class="action-btn export-btn">Export to CSV</button>
           <button id="clearFilters" class="action-btn" style="background: var(--danger);">Clear Filters</button>
           <button id="resetColumnWidths" class="action-btn" style="background: var(--warning); color: #000;">Reset Column Sizes</button>
+          <button id="manageColumns" class="action-btn manage-columns-btn">
+            <span>📋</span> Manage Columns
+          </button>
           <select id="pageSize" style="margin-left: auto; width: auto;">
             <option value="25">25 per page</option>
             <option value="50" selected>50 per page</option>
@@ -799,57 +1028,11 @@
         <div class="table-container">
           <table id="usersTable">
             <thead>
-              <tr>
-                <th class="sortable" data-column="name">Name</th>
-                <th class="sortable" data-column="email">Email</th>
-                <th class="sortable" data-column="roles">Role</th>
-                <th class="sortable" data-column="routingStatus.status">Status</th>
-                <th class="sortable" data-column="team.name">Team</th>
-                <th class="sortable" data-column="presence.presenceDefinition.systemPresence">Presence</th>
-                <th class="sortable" data-column="dateLastLogin">Last Login</th>
-                <th class="sortable" data-column="daysSinceLastLogin">Days Since Login</th>
-                <th class="sortable" data-column="skills">Skills</th>
-                <th>Queues</th>
+              <tr id="tableHeadersRow">
+                <!-- Headers will be dynamically generated -->
               </tr>
-              <tr class="filter-row">
-                <td><input type="text" class="column-filter" data-column="name" placeholder="Filter name..."></td>
-                <td><input type="text" class="column-filter" data-column="email" placeholder="Filter email..."></td>
-                <td><input type="text" class="column-filter" data-column="roles" placeholder="Filter role..."></td>
-                <td><select class="column-filter" data-column="routingStatus.status">
-                  <option value="">All</option>
-                  <option value="ON_QUEUE">On Queue</option>
-                  <option value="OFF_QUEUE">Off Queue</option>
-                  <option value="AVAILABLE">Available</option>
-                  <option value="OFFLINE">Offline</option>
-                  <option value="UNAVAILABLE">Unavailable</option>
-                  <option value="BUSY">Busy</option>
-                  <option value="MEETINGS">Meetings</option>
-                  <option value="BREAKS">Breaks</option>
-                  <option value="MEAL">Meal</option>
-                  <option value="AWAY">Away</option>
-                  <option value="TRAINING">Training</option>
-                  <option value="IDLE">Idle</option>
-                </select></td>
-                <td><input type="text" class="column-filter" data-column="team.name" placeholder="Filter team..."></td>
-                <td><select class="column-filter" data-column="presence.presenceDefinition.systemPresence">
-                  <option value="">All</option>
-                  <option value="On Queue">On Queue</option>
-                  <option value="Off Queue">Off Queue</option>
-                  <option value="Available">Available</option>
-                  <option value="Offline">Offline</option>
-                  <option value="Unavailable">Unavailable</option>
-                  <option value="Busy">Busy</option>
-                  <option value="Meetings">Meetings</option>
-                  <option value="Breaks">Breaks</option>
-                  <option value="Meal">Meal</option>
-                  <option value="Away">Away</option>
-                  <option value="Training">Training</option>
-                  <option value="Idle">Idle</option>
-                </select></td>
-                <td><input type="text" class="column-filter" data-column="dateLastLogin" placeholder="YYYY-MM-DD..."></td>
-                <td><input type="text" class="column-filter" data-column="daysSinceLastLogin" placeholder="Min days..."></td>
-                <td><input type="text" class="column-filter" data-column="skills" placeholder="Filter skills..."></td>
-                <td></td>
+              <tr class="filter-row" id="tableFiltersRow">
+                <!-- Filters will be dynamically generated -->
               </tr>
             </thead>
             <tbody></tbody>
@@ -993,6 +1176,41 @@
     </div>
   </div>
 
+  <!-- Column Manager Modal -->
+  <div id="columnManagerModal" class="column-manager-modal">
+    <div class="column-manager-content">
+      <div class="column-manager-header">
+        <h2>Manage Table Columns</h2>
+        <button class="close-column-manager" id="closeColumnManager">×</button>
+      </div>
+      
+      <div class="column-manager-body">
+        <div class="column-manager-search">
+          <input type="text" id="columnSearch" placeholder="Search columns..." />
+        </div>
+        
+        <div class="column-manager-actions">
+          <button id="selectAllColumns">Select All</button>
+          <button id="deselectAllColumns">Deselect All</button>
+          <button id="resetToDefault">Reset to Default</button>
+          <div style="flex: 1"></div>
+          <span id="selectedCount" style="font-size: 13px; color: var(--text-light);">
+            <span id="selectedColumnsCount">0</span> columns selected
+          </span>
+        </div>
+        
+        <div id="columnsListContainer" class="columns-list-container">
+          <!-- Columns will be populated here by JavaScript -->
+        </div>
+      </div>
+      
+      <div class="column-manager-footer">
+        <button id="cancelColumns" class="cancel-columns-btn">Cancel</button>
+        <button id="saveColumns" class="save-columns-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const clientId = 'fe305808-b368-4547-8af9-325d28d552bb';
     const redirectUri = 'https://gmcglynn88.github.io/Profiles/';
@@ -1004,7 +1222,7 @@
     let availableTeams = [];
     let availableManagementUnits = [];
     let userQueuesCache = new Map();
-    let rolesData = {}; // Store roles data for the roles tab
+    let rolesData = {};
     
     let rateLimitRemaining = 100;
     let rateLimitResetTime = Date.now() + 60000;
@@ -1019,6 +1237,25 @@
     
     let inactiveUsers = [];
     
+    // Column management variables
+    let visibleColumns = [];
+    let allColumns = [];
+    let columnCategories = {};
+    
+    // Default columns to show
+    const DEFAULT_VISIBLE_COLUMNS = [
+      'name',
+      'email',
+      'roles',
+      'routingStatus.status',
+      'team.name',
+      'presence.presenceDefinition.systemPresence',
+      'dateLastLogin',
+      'daysSinceLastLogin',
+      'skills',
+      'queues'
+    ];
+
     // Column resizing variables
     let activeResizer = null;
     let startX = 0;
@@ -1050,7 +1287,6 @@
       if (status.includes('train')) return 'status-training';
       if (status.includes('idle')) return 'status-idle';
       
-      // Default fallback
       return 'status-offline';
     }
 
@@ -1144,9 +1380,92 @@
       return response;
     }
 
+    function initializeColumnManager() {
+      allColumns = [
+        // Basic Info Category
+        { id: 'name', label: 'Name', category: 'Basic Info', type: 'string', default: true },
+        { id: 'email', label: 'Email', category: 'Basic Info', type: 'string', default: true },
+        { id: 'id', label: 'User ID', category: 'Basic Info', type: 'string', default: false },
+        { id: 'division.id', label: 'Division ID', category: 'Basic Info', type: 'string', default: false },
+        { id: 'division.name', label: 'Division Name', category: 'Basic Info', type: 'string', default: false },
+        
+        // Status & Presence Category
+        { id: 'routingStatus.status', label: 'Routing Status', category: 'Status & Presence', type: 'string', default: true },
+        { id: 'presence.presenceDefinition.systemPresence', label: 'System Presence', category: 'Status & Presence', type: 'string', default: true },
+        { id: 'integrationPresence.presenceDefinition.systemPresence', label: 'Integration Presence', category: 'Status & Presence', type: 'string', default: false },
+        { id: 'conversationSummary.active', label: 'Active Conversations', category: 'Status & Presence', type: 'number', default: false },
+        { id: 'outOfOffice.name', label: 'Out of Office', category: 'Status & Presence', type: 'string', default: false },
+        
+        // Team & Organization Category
+        { id: 'team.name', label: 'Team', category: 'Team & Organization', type: 'string', default: true },
+        { id: 'team.id', label: 'Team ID', category: 'Team & Organization', type: 'string', default: false },
+        { id: 'groups', label: 'Groups', category: 'Team & Organization', type: 'array', default: false },
+        { id: 'workPlanBidRanks', label: 'Work Plan Bid Ranks', category: 'Team & Organization', type: 'array', default: false },
+        
+        // Role & Authorization Category
+        { id: 'roles', label: 'Roles', category: 'Role & Authorization', type: 'array', default: true },
+        { id: 'authorization.unusedRoles', label: 'Unused Roles', category: 'Role & Authorization', type: 'array', default: false },
+        { id: 'authorization.permissions', label: 'Permissions', category: 'Role & Authorization', type: 'array', default: false },
+        { id: 'lasttokenissued', label: 'Last Token Issued', category: 'Role & Authorization', type: 'date', default: false },
+        
+        // Location & Station Category
+        { id: 'geolocation.city', label: 'City', category: 'Location & Station', type: 'string', default: false },
+        { id: 'geolocation.country', label: 'Country', category: 'Location & Station', type: 'string', default: false },
+        { id: 'station.name', label: 'Station Name', category: 'Location & Station', type: 'string', default: false },
+        { id: 'station.type', label: 'Station Type', category: 'Location & Station', type: 'string', default: false },
+        
+        // Skills & Attributes Category
+        { id: 'skills', label: 'Skills', category: 'Skills & Attributes', type: 'array', default: true },
+        { id: 'profileSkills', label: 'Profile Skills', category: 'Skills & Attributes', type: 'array', default: false },
+        { id: 'certifications', label: 'Certifications', category: 'Skills & Attributes', type: 'array', default: false },
+        { id: 'languages', label: 'Languages', category: 'Skills & Attributes', type: 'array', default: false },
+        { id: 'languagePreference', label: 'Language Preference', category: 'Skills & Attributes', type: 'string', default: false },
+        { id: 'customAttributes', label: 'Custom Attributes', category: 'Skills & Attributes', type: 'object', default: false },
+        
+        // Contact Settings Category
+        { id: 'externalContactsSettings', label: 'External Contact Settings', category: 'Contact Settings', type: 'object', default: false },
+        
+        // Employment Info Category
+        { id: 'employerInfo.officialName', label: 'Official Name', category: 'Employment Info', type: 'string', default: false },
+        { id: 'employerInfo.employeeId', label: 'Employee ID', category: 'Employment Info', type: 'string', default: false },
+        { id: 'employerInfo.employeeType', label: 'Employee Type', category: 'Employment Info', type: 'string', default: false },
+        { id: 'employerInfo.hireDate', label: 'Hire Date', category: 'Employment Info', type: 'date', default: false },
+        
+        // Biography & Dates Category
+        { id: 'biography.biography', label: 'Biography', category: 'Biography & Dates', type: 'string', default: false },
+        { id: 'dateLastLogin', label: 'Last Login Date', category: 'Biography & Dates', type: 'date', default: true },
+        { id: 'dateWelcomeSent', label: 'Welcome Sent Date', category: 'Biography & Dates', type: 'date', default: false },
+        { id: 'daysSinceLastLogin', label: 'Days Since Login', category: 'Biography & Dates', type: 'number', default: true },
+        
+        // Queues Category
+        { id: 'queues', label: 'Queues', category: 'Queues', type: 'array', default: true }
+      ];
+      
+      // Load saved column preferences from localStorage
+      const savedColumns = localStorage.getItem('visibleColumns');
+      if (savedColumns) {
+        visibleColumns = JSON.parse(savedColumns);
+      } else {
+        visibleColumns = [...DEFAULT_VISIBLE_COLUMNS];
+      }
+      
+      // Group columns by category
+      columnCategories = {};
+      allColumns.forEach(column => {
+        if (!columnCategories[column.category]) {
+          columnCategories[column.category] = [];
+        }
+        columnCategories[column.category].push(column);
+      });
+    }
+
     async function initializeApp() {
       try {
         showLoading(true);
+        
+        // Initialize column manager first
+        initializeColumnManager();
+        
         await Promise.all([
           fetchAllTeams(),
           fetchAllManagementUnits()
@@ -1156,6 +1475,10 @@
         populateDropdownOptions();
         setupEventListeners();
         setupTabs();
+        
+        // Render table headers with saved preferences
+        renderTableHeaders();
+        
         showLoading(false);
 
       } catch (e) {
@@ -1184,7 +1507,6 @@
         
         availableTeams = all;
         
-        // Populate team filters
         const inactiveTeamFilter = document.getElementById('inactiveTeamFilter');
         const roleTeamFilter = document.getElementById('roleTeamFilter');
         
@@ -1241,7 +1563,7 @@
         );
         const data = await response.json();
         const queues = data.entities || [];
-        const queueNames = queues.map(q => q.name).slice(0, 10); // Limit to 10 queues
+        const queueNames = queues.map(q => q.name).slice(0, 10);
         userQueuesCache.set(userId, queueNames);
         return queueNames;
       } catch (error) {
@@ -1323,7 +1645,6 @@
               u.name && u.name.trim() && u.name !== 'Unknown User'
             );
             
-            // Calculate days since last login for each user
             validUsers.forEach(user => {
               if (user.dateLastLogin) {
                 const lastLogin = new Date(user.dateLastLogin);
@@ -1331,10 +1652,9 @@
                 const diffTime = Math.abs(today - lastLogin);
                 user.daysSinceLastLogin = Math.floor(diffTime / (1000 * 60 * 60 * 24));
               } else {
-                user.daysSinceLastLogin = 999; // Never logged in
+                user.daysSinceLastLogin = 999;
               }
               
-              // Extract roles
               if (user.authorization && user.authorization.roles) {
                 user.roles = user.authorization.roles.map(r => r.name);
               } else {
@@ -1375,13 +1695,11 @@
         
         progressContainer.style.display = 'none';
         
-        // Initialize column resizing after users are loaded
         setupColumnResizing();
         
         applyFilters();
         renderTable();
         
-        // Update roles data
         updateRolesData();
         
         showMessage(`Successfully loaded ${availableUsers.length} users`, 'success');
@@ -1418,12 +1736,10 @@
         }
       });
       
-      // Sort roles by number of users (descending)
       const sortedRoles = Object.keys(rolesData).sort((a, b) => 
         rolesData[b].users.length - rolesData[a].users.length
       );
       
-      // Update stats
       document.getElementById('totalRoles').textContent = sortedRoles.length;
       document.getElementById('totalUsersWithRoles').textContent = availableUsers.filter(u => u.roles && u.roles.length > 0).length;
       
@@ -1448,14 +1764,11 @@
       );
       
       const filteredRoles = sortedRoles.filter(role => {
-        // Filter by search
         if (roleSearch && !role.toLowerCase().includes(roleSearch)) {
           return false;
         }
         
-        // Filter by team
         if (teamFilter) {
-          const roleTeams = Array.from(rolesData[role].teams);
           const hasTeam = rolesData[role].users.some(user => 
             user.team && user.team.id === teamFilter
           );
@@ -1476,8 +1789,8 @@
         const roleInfo = rolesData[role];
         const userCount = roleInfo.users.length;
         const teamCount = roleInfo.teams.size;
-        const sampleUsers = roleInfo.users.slice(0, 5); // Show first 5 users
-        const teams = Array.from(roleInfo.teams).slice(0, 3); // Show first 3 teams
+        const sampleUsers = roleInfo.users.slice(0, 5);
+        const teams = Array.from(roleInfo.teams).slice(0, 3);
         
         return `
           <div class="role-card">
@@ -1507,22 +1820,20 @@
       const roleInfo = rolesData[roleName];
       const users = roleInfo.users;
       
-      // Switch to active users tab
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       
       document.querySelector('.tab[data-tab="active-users"]').classList.add('active');
       document.getElementById('active-users').classList.add('active');
       
-      // Clear existing filters
       clearFilters();
       
-      // Set filter to show only users with this role
       const rolesFilter = document.querySelector('.column-filter[data-column="roles"]');
-      rolesFilter.value = roleName;
-      filters['roles'] = roleName;
+      if (rolesFilter) {
+        rolesFilter.value = roleName;
+        filters['roles'] = roleName;
+      }
       
-      // Apply filters and render table
       applyFilters();
       renderTable();
       
@@ -1691,6 +2002,130 @@
       });
     }
 
+    function renderTableHeaders() {
+      const thead = document.querySelector('#usersTable thead');
+      const headerRow = document.getElementById('tableHeadersRow');
+      const filterRow = document.getElementById('tableFiltersRow');
+      
+      if (!headerRow || !filterRow) return;
+      
+      headerRow.innerHTML = '';
+      filterRow.innerHTML = '';
+      
+      visibleColumns.forEach(columnId => {
+        const column = allColumns.find(c => c.id === columnId);
+        if (!column) return;
+        
+        const th = document.createElement('th');
+        th.className = 'sortable';
+        th.dataset.column = columnId;
+        th.textContent = column.label;
+        
+        const resizer = document.createElement('div');
+        resizer.className = 'resizer';
+        resizer.dataset.index = visibleColumns.indexOf(columnId);
+        th.appendChild(resizer);
+        th.style.position = 'relative';
+        
+        th.addEventListener('click', function() {
+          const column = this.dataset.column;
+          
+          if (sortColumn === column) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortColumn = column;
+            sortDirection = 'asc';
+          }
+          
+          renderTable();
+        });
+        
+        headerRow.appendChild(th);
+        
+        const filterTd = document.createElement('td');
+        
+        if (column.type === 'string' || column.type === 'array') {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'column-filter';
+          input.dataset.column = columnId;
+          input.placeholder = `Filter ${column.label.toLowerCase()}...`;
+          input.addEventListener('input', function() {
+            const column = this.dataset.column;
+            if (this.value.trim()) {
+              filters[column] = this.value;
+            } else {
+              delete filters[column];
+            }
+            currentPage = 1;
+            applyFilters();
+            renderTable();
+          });
+          filterTd.appendChild(input);
+        } else if (column.type === 'date') {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'column-filter';
+          input.dataset.column = columnId;
+          input.placeholder = 'YYYY-MM-DD...';
+          input.addEventListener('input', function() {
+            const column = this.dataset.column;
+            if (this.value.trim()) {
+              filters[column] = this.value;
+            } else {
+              delete filters[column];
+            }
+            currentPage = 1;
+            applyFilters();
+            renderTable();
+          });
+          filterTd.appendChild(input);
+        } else if (column.id === 'routingStatus.status') {
+          const select = document.createElement('select');
+          select.className = 'column-filter';
+          select.dataset.column = columnId;
+          select.innerHTML = `
+            <option value="">All</option>
+            <option value="ON_QUEUE">On Queue</option>
+            <option value="OFF_QUEUE">Off Queue</option>
+            <option value="AVAILABLE">Available</option>
+            <option value="OFFLINE">Offline</option>
+            <option value="UNAVAILABLE">Unavailable</option>
+            <option value="BUSY">Busy</option>
+            <option value="MEETINGS">Meetings</option>
+            <option value="BREAKS">Breaks</option>
+            <option value="MEAL">Meal</option>
+            <option value="AWAY">Away</option>
+            <option value="TRAINING">Training</option>
+            <option value="IDLE">Idle</option>
+          `;
+          select.addEventListener('change', function() {
+            const column = this.dataset.column;
+            if (this.value) {
+              filters[column] = this.value;
+            } else {
+              delete filters[column];
+            }
+            currentPage = 1;
+            applyFilters();
+            renderTable();
+          });
+          filterTd.appendChild(select);
+        } else {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'column-filter';
+          input.dataset.column = columnId;
+          input.placeholder = 'Filter...';
+          filterTd.appendChild(input);
+        }
+        
+        filterRow.appendChild(filterTd);
+      });
+      
+      updateSortIndicators();
+    }
+
     async function renderTable() {
       const tbody = document.querySelector('#usersTable tbody');
       const start = (currentPage - 1) * pageSize;
@@ -1698,70 +2133,115 @@
       const pageUsers = sortUsers([...filteredUsers]).slice(start, end);
       
       if (pageUsers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-light)}">
+        tbody.innerHTML = `<tr><td colspan="${visibleColumns.length}" style="text-align:center;padding:40px;color:var(--text-light)}">
           No users found. Try adjusting your filters or click "Load Users".
         </td></tr>`;
         updatePaginationInfo(0, 0);
         return;
       }
       
-      // Fetch queues for all users on the page
       const queuePromises = pageUsers.map(user => fetchUserQueues(user.id));
       const queuesList = await Promise.all(queuePromises);
       
       tbody.innerHTML = pageUsers.map((user, index) => {
-        const status = user.routingStatus?.status || 'UNKNOWN';
-        const presence = user.presence?.presenceDefinition?.systemPresence || 'Offline';
-        const team = user.team?.name || 'Unassigned';
-        const lastLogin = user.dateLastLogin ? 
-          new Date(user.dateLastLogin).toLocaleDateString() + ' ' + 
-          new Date(user.dateLastLogin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
-          : 'Never';
-        const skills = user.skills?.map(s => s.name) || [];
-        const daysSinceLogin = user.daysSinceLastLogin || 0;
-        const roles = user.roles || [];
-        const userQueues = queuesList[index] || [];
-        const statusClass = getStatusClass(presence);
+        const rowCells = visibleColumns.map(columnId => {
+          let cellValue = getNestedValue(user, columnId);
+          
+          if (columnId === 'skills') {
+            const skills = user.skills?.map(s => s.name) || [];
+            return `
+              <td>
+                <div class="skills-list" title="${skills.join(', ') || 'None'}">
+                  ${skills.slice(0, 5).map(skill => `<span>${skill}</span>`).join('')}
+                  ${skills.length > 5 ? '<span>...</span>' : ''}
+                  ${skills.length === 0 ? '<span style="color: var(--text-light);">None</span>' : ''}
+                </div>
+              </td>
+            `;
+          }
+          
+          if (columnId === 'queues') {
+            const userQueues = queuesList[index] || [];
+            return `
+              <td>
+                <div class="queues-list" title="${userQueues.join(', ')}">
+                  ${userQueues.slice(0, 5).map(queue => `<span>${queue}</span>`).join('')}
+                  ${userQueues.length > 5 ? '<span>...</span>' : ''}
+                  ${userQueues.length === 0 ? '<span style="color: var(--text-light);">None</span>' : ''}
+                </div>
+              </td>
+            `;
+          }
+          
+          if (columnId === 'roles') {
+            const roles = user.roles || [];
+            return `
+              <td>
+                <div class="roles-list" title="${roles.join(', ') || 'No role'}">
+                  ${roles.slice(0, 5).map(role => `<span>${role}</span>`).join('')}
+                  ${roles.length > 5 ? '<span>...</span>' : ''}
+                  ${roles.length === 0 ? '<span style="color: var(--text-light);">No role</span>' : ''}
+                </div>
+              </td>
+            `;
+          }
+          
+          if (columnId === 'routingStatus.status') {
+            const status = cellValue || 'UNKNOWN';
+            const presence = user.presence?.presenceDefinition?.systemPresence || 'Offline';
+            const statusClass = getStatusClass(presence);
+            return `
+              <td>
+                <span class="status-badge ${statusClass}">${presence}</span><br>
+                <small class="muted">${status}</small>
+              </td>
+            `;
+          }
+          
+          if (columnId === 'presence.presenceDefinition.systemPresence') {
+            const presence = cellValue || 'Offline';
+            const statusClass = getStatusClass(presence);
+            return `<td><span class="status-badge ${statusClass}">${presence}</span></td>`;
+          }
+          
+          if (columnId === 'team.name') {
+            return `<td>${cellValue || 'Unassigned'}</td>`;
+          }
+          
+          if (columnId === 'dateLastLogin') {
+            if (!cellValue) return `<td>Never</td>`;
+            const date = new Date(cellValue);
+            return `<td>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>`;
+          }
+          
+          if (columnId === 'daysSinceLastLogin') {
+            const days = cellValue || 0;
+            let daysClass = '';
+            if (days > 30) daysClass = 'style="color: var(--danger); font-weight: bold;"';
+            else if (days > 7) daysClass = 'style="color: var(--warning);"';
+            return `<td style="text-align:center;" ${daysClass}>${days === 999 ? 'Never' : days}</td>`;
+          }
+          
+          if (columnId === 'email') {
+            return `<td>${cellValue || 'No email'}</td>`;
+          }
+          
+          if (columnId === 'name') {
+            return `<td><strong>${cellValue || 'Unknown'}</strong></td>`;
+          }
+          
+          if (Array.isArray(cellValue)) {
+            return `<td>${cellValue.join(', ') || ''}</td>`;
+          }
+          
+          if (typeof cellValue === 'object' && cellValue !== null) {
+            return `<td>${JSON.stringify(cellValue)}</td>`;
+          }
+          
+          return `<td>${cellValue || ''}</td>`;
+        }).join('');
         
-        let daysClass = '';
-        if (daysSinceLogin > 30) daysClass = 'style="color: var(--danger); font-weight: bold;"';
-        else if (daysSinceLogin > 7) daysClass = 'style="color: var(--warning);"';
-        
-        return `
-          <tr>
-            <td><strong>${user.name || 'Unknown'}</strong></td>
-            <td>${user.email || 'No email'}</td>
-            <td>
-              <div class="roles-list" title="${roles.join(', ') || 'No role'}">
-                ${roles.slice(0, 5).map(role => `<span>${role}</span>`).join('')}
-                ${roles.length > 5 ? '<span>...</span>' : ''}
-                ${roles.length === 0 ? '<span style="color: var(--text-light);">No role</span>' : ''}
-              </div>
-            </td>
-            <td>
-              <span class="status-badge ${statusClass}">${presence}</span><br>
-              <small class="muted">${status}</small>
-            </td>
-            <td>${team}</td>
-            <td>${presence}</td>
-            <td>${lastLogin}</td>
-            <td style="text-align:center;" ${daysClass}>${daysSinceLogin === 999 ? 'Never' : daysSinceLogin}</td>
-            <td>
-              <div class="skills-list" title="${skills.join(', ') || 'None'}">
-                ${skills.slice(0, 5).map(skill => `<span>${skill}</span>`).join('')}
-                ${skills.length > 5 ? '<span>...</span>' : ''}
-                ${skills.length === 0 ? '<span style="color: var(--text-light);">None</span>' : ''}
-              </div>
-            </td>
-            <td>
-              <div class="queues-list" title="${userQueues.join(', ')}">
-                ${userQueues.slice(0, 5).map(queue => `<span>${queue}</span>`).join('')}
-                ${userQueues.length > 5 ? '<span>...</span>' : ''}
-                ${userQueues.length === 0 ? '<span style="color: var(--text-light);">None</span>' : ''}
-              </div>
-            </td>
-          </tr>
-        `;
+        return `<tr>${rowCells}</tr>`;
       }).join('');
       
       updatePaginationInfo(start, end);
@@ -1809,33 +2289,139 @@
       document.getElementById('awayUsers').textContent = away;
     }
 
+    // Column Manager Functions
+    function showColumnManager() {
+      const modal = document.getElementById('columnManagerModal');
+      const searchInput = document.getElementById('columnSearch');
+      const columnsContainer = document.getElementById('columnsListContainer');
+      
+      searchInput.value = '';
+      renderColumnList();
+      modal.classList.add('open');
+      searchInput.focus();
+    }
+
+    function renderColumnList(searchTerm = '') {
+      const columnsContainer = document.getElementById('columnsListContainer');
+      const selectedCountElement = document.getElementById('selectedColumnsCount');
+      
+      let html = '';
+      let totalSelected = 0;
+      
+      const filteredCategories = {};
+      
+      Object.keys(columnCategories).forEach(category => {
+        const columns = columnCategories[category].filter(column => {
+          if (!searchTerm) return true;
+          const search = searchTerm.toLowerCase();
+          return column.label.toLowerCase().includes(search) || 
+                 column.id.toLowerCase().includes(search) ||
+                 category.toLowerCase().includes(search);
+        });
+        
+        if (columns.length > 0) {
+          filteredCategories[category] = columns;
+        }
+      });
+      
+      Object.keys(filteredCategories).forEach(category => {
+        const columns = filteredCategories[category];
+        let categorySelected = 0;
+        
+        const columnsHtml = columns.map(column => {
+          const isSelected = visibleColumns.includes(column.id);
+          if (isSelected) {
+            categorySelected++;
+            totalSelected++;
+          }
+          
+          return `
+            <div class="column-item" data-column-id="${column.id}">
+              <input type="checkbox" id="col_${column.id}" ${isSelected ? 'checked' : ''}>
+              <label for="col_${column.id}" class="column-label">${column.label}</label>
+              <span class="column-type type-${column.type}">${column.type}</span>
+            </div>
+          `;
+        }).join('');
+        
+        html += `
+          <div class="columns-category">
+            <div class="category-header" onclick="toggleCategory(this)">
+              <h3>${category}</h3>
+              <span class="category-count">${categorySelected}/${columns.length}</span>
+            </div>
+            <div class="category-content">
+              ${columnsHtml}
+            </div>
+          </div>
+        `;
+      });
+      
+      columnsContainer.innerHTML = html || '<div style="text-align:center;padding:40px;color:var(--text-light)">No columns found matching your search.</div>';
+      
+      selectedCountElement.textContent = totalSelected;
+      
+      document.querySelectorAll('.column-item input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+          const columnId = this.id.replace('col_', '');
+          if (this.checked) {
+            if (!visibleColumns.includes(columnId)) {
+              visibleColumns.push(columnId);
+            }
+          } else {
+            const index = visibleColumns.indexOf(columnId);
+            if (index > -1) {
+              visibleColumns.splice(index, 1);
+            }
+          }
+          
+          renderColumnList(document.getElementById('columnSearch').value);
+        });
+      });
+    }
+
+    function toggleCategory(header) {
+      const categoryContent = header.nextElementSibling;
+      if (categoryContent.style.display === 'none') {
+        categoryContent.style.display = 'grid';
+      } else {
+        categoryContent.style.display = 'none';
+      }
+    }
+
+    function saveColumnPreferences() {
+      localStorage.setItem('visibleColumns', JSON.stringify(visibleColumns));
+      
+      document.getElementById('columnManagerModal').classList.remove('open');
+      
+      renderTableHeaders();
+      renderTable();
+      
+      showMessage('Column preferences saved', 'success');
+    }
+
     // Column Resizing Functions
     function setupColumnResizing() {
       const table = document.getElementById('usersTable');
       tableElement = table;
       const headers = table.querySelectorAll('thead tr:first-child th');
       
-      // Store original widths
       headers.forEach((header, index) => {
         originalWidths[index] = header.getBoundingClientRect().width;
       });
       
-      // Add resizer to each header
       headers.forEach((header, index) => {
         const resizer = document.createElement('div');
         resizer.classList.add('resizer');
         resizer.dataset.index = index;
         header.appendChild(resizer);
         
-        // Make header position relative if not already
         header.style.position = 'relative';
         
-        // Add event listeners for resizing
         resizer.addEventListener('mousedown', startResize);
         resizer.addEventListener('touchstart', startResizeTouch);
       });
       
-      // Setup resizing for inactive users table too
       const inactiveTable = document.getElementById('inactiveUsersTable');
       if (inactiveTable) {
         setupInactiveColumnResizing(inactiveTable);
@@ -1893,17 +2479,14 @@
       
       const currentX = e.clientX || e.pageX;
       const dx = currentX - startX;
-      const newWidth = Math.max(50, startWidth + dx); // Minimum 50px
+      const newWidth = Math.max(50, startWidth + dx);
       
       const header = activeResizer.parentElement;
       const table = header.closest('table');
-      const allHeaders = table.querySelectorAll('thead tr:first-child th');
       const allRows = table.querySelectorAll('tbody tr');
       
-      // Update header width
       header.style.width = `${newWidth}px`;
       
-      // Update all cells in this column
       allRows.forEach(row => {
         const cell = row.querySelector(`td:nth-child(${columnIndex + 1})`);
         if (cell) {
@@ -1911,7 +2494,6 @@
         }
       });
       
-      // Prevent text selection during resize
       e.preventDefault();
     }
     
@@ -1924,7 +2506,6 @@
       
       const header = activeResizer.parentElement;
       const table = header.closest('table');
-      const allHeaders = table.querySelectorAll('thead tr:first-child th');
       const allRows = table.querySelectorAll('tbody tr');
       
       header.style.width = `${newWidth}px`;
@@ -1954,10 +2535,7 @@
       const rows = table.querySelectorAll('tbody tr');
       
       headers.forEach((header, index) => {
-        // Remove inline width styles to revert to CSS defaults
         header.style.width = '';
-        
-        // Remove width from all cells in this column
         rows.forEach(row => {
           const cell = row.querySelector(`td:nth-child(${index + 1})`);
           if (cell) {
@@ -2142,11 +2720,9 @@
       
       tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-          // Remove active class from all tabs and contents
           tabs.forEach(t => t.classList.remove('active'));
           tabContents.forEach(c => c.classList.remove('active'));
           
-          // Add active class to clicked tab and corresponding content
           tab.classList.add('active');
           const tabId = tab.dataset.tab;
           document.getElementById(tabId).classList.add('active');
@@ -2166,12 +2742,10 @@
       const teamFilter = document.getElementById('inactiveTeamFilter').value;
       
       let filteredInactive = availableUsers.filter(user => {
-        // Filter by days since login
         if (user.daysSinceLastLogin < daysSinceLogin) {
           return false;
         }
         
-        // Filter by date range if specified
         if (dateFrom && user.dateLastLogin) {
           const lastLogin = new Date(user.dateLastLogin);
           const fromDate = new Date(dateFrom);
@@ -2188,7 +2762,6 @@
           }
         }
         
-        // Filter by team if specified
         if (teamFilter && user.team && user.team.id !== teamFilter) {
           return false;
         }
@@ -2196,7 +2769,6 @@
         return true;
       });
       
-      // Sort by days since login (descending)
       filteredInactive.sort((a, b) => b.daysSinceLastLogin - a.daysSinceLastLogin);
       
       inactiveUsers = filteredInactive;
@@ -2216,7 +2788,6 @@
         return;
       }
       
-      // Fetch queues for inactive users (limit to first 50 for performance)
       const usersToFetch = inactiveUsers.slice(0, 50);
       const queuePromises = usersToFetch.map(user => fetchUserQueues(user.id));
       const queuesList = await Promise.all(queuePromises);
@@ -2319,14 +2890,12 @@
           return;
         }
         
-        // Switch to active users tab
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         
         document.querySelector('.tab[data-tab="active-users"]').classList.add('active');
         document.getElementById('active-users').classList.add('active');
         
-        // Clear filters and show all users
         clearFilters();
         
         showMessage('Showing all users', 'success');
@@ -2337,6 +2906,52 @@
       document.getElementById('resetColumnWidths').addEventListener('click', resetColumnWidths);
       
       document.getElementById('resetInactiveColumnWidths').addEventListener('click', resetInactiveColumnWidths);
+      
+      // Column manager event listeners
+      document.getElementById('manageColumns').addEventListener('click', showColumnManager);
+      document.getElementById('closeColumnManager').addEventListener('click', () => {
+        document.getElementById('columnManagerModal').classList.remove('open');
+      });
+      document.getElementById('cancelColumns').addEventListener('click', () => {
+        document.getElementById('columnManagerModal').classList.remove('open');
+      });
+      
+      document.getElementById('saveColumns').addEventListener('click', saveColumnPreferences);
+      
+      document.getElementById('columnSearch').addEventListener('input', function() {
+        renderColumnList(this.value);
+      });
+      
+      document.getElementById('selectAllColumns').addEventListener('click', function() {
+        allColumns.forEach(column => {
+          if (!visibleColumns.includes(column.id)) {
+            visibleColumns.push(column.id);
+          }
+        });
+        renderColumnList(document.getElementById('columnSearch').value);
+      });
+      
+      document.getElementById('deselectAllColumns').addEventListener('click', function() {
+        visibleColumns = [];
+        renderColumnList(document.getElementById('columnSearch').value);
+      });
+      
+      document.getElementById('resetToDefault').addEventListener('click', function() {
+        visibleColumns = [...DEFAULT_VISIBLE_COLUMNS];
+        renderColumnList(document.getElementById('columnSearch').value);
+      });
+      
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.getElementById('columnManagerModal').classList.contains('open')) {
+          document.getElementById('columnManagerModal').classList.remove('open');
+        }
+      });
+      
+      document.getElementById('columnManagerModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+          this.classList.remove('open');
+        }
+      });
       
       document.getElementById('pageSize').addEventListener('change', function() {
         pageSize = parseInt(this.value);
@@ -2375,34 +2990,7 @@
         renderTable();
       });
       
-      document.querySelectorAll('.column-filter').forEach(input => {
-        input.addEventListener('input', function() {
-          const column = this.dataset.column;
-          if (this.value.trim()) {
-            filters[column] = this.value;
-          } else {
-            delete filters[column];
-          }
-          currentPage = 1;
-          applyFilters();
-          renderTable();
-        });
-      });
-      
-      document.querySelectorAll('.sortable').forEach(th => {
-        th.addEventListener('click', function() {
-          const column = this.dataset.column;
-          
-          if (sortColumn === column) {
-            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-          } else {
-            sortColumn = column;
-            sortDirection = 'asc';
-          }
-          
-          renderTable();
-        });
-      });
+      // Note: Column filter event listeners are now added dynamically in renderTableHeaders
     }
 
     function exportToCSV() {
@@ -2411,24 +2999,46 @@
         return;
       }
       
-      const headers = [
-        'Name', 'Email', 'Role', 'Status', 'Team', 'Presence',
-        'Last Login', 'Days Since Login', 'Skills', 'Queues', 'User ID'
-      ];
+      const headers = visibleColumns.map(columnId => {
+        const column = allColumns.find(c => c.id === columnId);
+        return column ? column.label : columnId;
+      });
       
-      const data = filteredUsers.map(user => [
-        user.name || '',
-        user.email || '',
-        user.roles?.join('; ') || '',
-        user.routingStatus?.status || '',
-        user.team?.name || '',
-        user.presence?.presenceDefinition?.systemPresence || '',
-        user.dateLastLogin ? new Date(user.dateLastLogin).toISOString() : '',
-        user.daysSinceLastLogin || 0,
-        user.skills?.map(s => s.name).join('; ') || '',
-        '', // Queues would need to be fetched separately for export
-        user.id || ''
-      ]);
+      headers.push('User ID');
+      
+      const data = filteredUsers.map(user => {
+        const row = visibleColumns.map(columnId => {
+          let value = getNestedValue(user, columnId);
+          
+          if (columnId === 'skills') {
+            const skills = user.skills?.map(s => s.name) || [];
+            return skills.join('; ');
+          }
+          
+          if (columnId === 'roles') {
+            const roles = user.roles || [];
+            return roles.join('; ');
+          }
+          
+          if (columnId === 'dateLastLogin' && value) {
+            return new Date(value).toISOString();
+          }
+          
+          if (Array.isArray(value)) {
+            return value.join('; ');
+          }
+          
+          if (typeof value === 'object' && value !== null) {
+            return JSON.stringify(value);
+          }
+          
+          return value || '';
+        });
+        
+        row.push(user.id || '');
+        
+        return row;
+      });
       
       const csvContent = [
         headers.join(','),
@@ -2445,7 +3055,7 @@
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      showMessage(`Exported ${filteredUsers.length} users to CSV`, 'success');
+      showMessage(`Exported ${filteredUsers.length} users to CSV with ${visibleColumns.length} columns`, 'success');
     }
 
     function exportInactiveToCSV() {
