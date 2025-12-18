@@ -39,9 +39,15 @@
     button:disabled{background:var(--text-light);cursor:not-allowed}
 
     .controls{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-      gap:16px;align-items:end
+      display:flex;
+      flex-wrap: wrap;
+      gap:16px;
+      align-items:flex-end;
+    }
+
+    .controls > div {
+      flex: 1;
+      min-width: 200px;
     }
 
     .full-width-btn{width:100%;padding:14px 18px;font-size:16px;margin-top:12px}
@@ -70,7 +76,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1200px;
+      table-layout: auto;
     }
 
     th {
@@ -80,6 +86,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
+      white-space: nowrap;
     }
 
     th, td {
@@ -88,6 +95,7 @@
       text-align: left;
       vertical-align: top;
       font-size: 13px;
+      white-space: nowrap;
     }
 
     tr:hover {
@@ -297,6 +305,83 @@
       display: none;
     }
 
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-weight: 600;
+      color: var(--text-light);
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom: 3px solid var(--primary-color);
+    }
+
+    .tab:hover {
+      color: var(--primary-color);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .inactive-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: var(--filter-bg);
+      border-radius: 8px;
+    }
+
+    .days-input {
+      width: 100px;
+    }
+
+    .date-range-inputs {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .date-range-inputs input {
+      flex: 1;
+    }
+
+    .queues-list {
+      max-width: 300px;
+      max-height: 100px;
+      overflow-y: auto;
+      padding: 5px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--light-bg);
+    }
+
+    .queues-list span {
+      display: inline-block;
+      background: var(--pill);
+      padding: 2px 6px;
+      margin: 2px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+
     @media (max-width: 1200px) {
       .controls {
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -380,141 +465,222 @@
 
     <h1 style="margin-bottom: 20px;">User Management Dashboard</h1>
 
-    <div class="filter-section card">
-      <h3>Filter Users</h3>
-      
-      <div class="controls">
-        <div>
-          <label>Select Management Units</label>
-          <div id="managementUnitDropdown" class="checkbox-dropdown"></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="active-users">Active Users</button>
+      <button class="tab" data-tab="inactive-users">Inactive Users</button>
+    </div>
+
+    <!-- Active Users Tab -->
+    <div id="active-users" class="tab-content active">
+      <div class="filter-section card">
+        <h3>Filter Users</h3>
+        
+        <div class="controls">
+          <div>
+            <label>Select Management Units</label>
+            <div id="managementUnitDropdown" class="checkbox-dropdown"></div>
+          </div>
+          <div>
+            <label>Select Teams</label>
+            <div id="teamDropdown" class="checkbox-dropdown"></div>
+          </div>
+          <div>
+            <label>Filter by Status</label>
+            <select id="statusFilter">
+              <option value="">All Statuses</option>
+              <option value="AVAILABLE">Available</option>
+              <option value="BUSY">Busy</option>
+              <option value="AWAY">Away</option>
+              <option value="OFFLINE">Offline</option>
+              <option value="IDLE">Idle</option>
+            </select>
+          </div>
+          <div>
+            <label>Search Users</label>
+            <input type="text" id="globalSearch" placeholder="Search name, email, skills..." />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="fetchUsers" class="full-width-btn">Load Users</button>
+          </div>
         </div>
-        <div>
-          <label>Select Teams</label>
-          <div id="teamDropdown" class="checkbox-dropdown"></div>
-        </div>
-        <div>
-          <label>Filter by Status</label>
-          <select id="statusFilter">
-            <option value="">All Statuses</option>
-            <option value="AVAILABLE">Available</option>
-            <option value="BUSY">Busy</option>
-            <option value="AWAY">Away</option>
-            <option value="OFFLINE">Offline</option>
-            <option value="IDLE">Idle</option>
-          </select>
-        </div>
-        <div>
-          <label>Search Users</label>
-          <input type="text" id="globalSearch" placeholder="Search name, email, skills..." />
-        </div>
-        <div>
-          <label>&nbsp;</label>
-          <button id="fetchUsers" class="full-width-btn">Load Users</button>
+        
+        <div id="rateLimitInfo" class="rate-limit-info">
+          Rate limit: <span id="rateLimitRemaining">100</span> remaining, resets in <span id="rateLimitReset">60</span>s
         </div>
       </div>
-      
-      <div id="rateLimitInfo" class="rate-limit-info">
-        Rate limit: <span id="rateLimitRemaining">100</span> remaining, resets in <span id="rateLimitReset">60</span>s
+
+      <div class="card">
+        <div id="progressContainer" class="progress-container" style="display:none;">
+          <div class="progress-text">
+            <span id="progressStatus">Loading users...</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="progress-text">
+            <span id="progressCount">0</span> of <span id="progressTotal">0</span> users loaded
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="refreshData" class="action-btn">Refresh Data</button>
+          <button id="exportCSV" class="action-btn export-btn">Export to CSV</button>
+          <button id="clearFilters" class="action-btn" style="background: var(--danger);">Clear Filters</button>
+          <select id="pageSize" style="margin-left: auto; width: auto;">
+            <option value="25">25 per page</option>
+            <option value="50" selected>50 per page</option>
+            <option value="100">100 per page</option>
+            <option value="200">200 per page</option>
+          </select>
+        </div>
+
+        <div class="stats-bar" id="statsBar">
+          <div class="stat-item">
+            <span class="stat-value" id="totalUsers">0</span>
+            <span class="stat-label">Total Users</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="onlineUsers">0</span>
+            <span class="stat-label">Online</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="activeUsers">0</span>
+            <span class="stat-label">Active Today</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="awayUsers">0</span>
+            <span class="stat-label">Away</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="busyUsers">0</span>
+            <span class="stat-label">Busy</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table id="usersTable">
+            <thead>
+              <tr>
+                <th class="sortable" data-column="name">Name</th>
+                <th class="sortable" data-column="email">Email</th>
+                <th class="sortable" data-column="roles">Role</th>
+                <th class="sortable" data-column="routingStatus.status">Status</th>
+                <th class="sortable" data-column="team.name">Team</th>
+                <th class="sortable" data-column="presence.presenceDefinition.systemPresence">Presence</th>
+                <th class="sortable" data-column="dateLastLogin">Last Login</th>
+                <th class="sortable" data-column="daysSinceLastLogin">Days Since Login</th>
+                <th class="sortable" data-column="skills">Skills</th>
+                <th>Queues</th>
+              </tr>
+              <tr class="filter-row">
+                <td><input type="text" class="column-filter" data-column="name" placeholder="Filter name..."></td>
+                <td><input type="text" class="column-filter" data-column="email" placeholder="Filter email..."></td>
+                <td><input type="text" class="column-filter" data-column="roles" placeholder="Filter role..."></td>
+                <td><select class="column-filter" data-column="routingStatus.status">
+                  <option value="">All</option>
+                  <option value="IDLE">Idle</option>
+                  <option value="INTERACTING">Interacting</option>
+                  <option value="NOT_RESPONDING">Not Responding</option>
+                  <option value="COMMUNICATING">Communicating</option>
+                </select></td>
+                <td><input type="text" class="column-filter" data-column="team.name" placeholder="Filter team..."></td>
+                <td><select class="column-filter" data-column="presence.presenceDefinition.systemPresence">
+                  <option value="">All</option>
+                  <option value="Available">Available</option>
+                  <option value="Busy">Busy</option>
+                  <option value="Away">Away</option>
+                  <option value="Offline">Offline</option>
+                  <option value="Idle">Idle</option>
+                </select></td>
+                <td><input type="text" class="column-filter" data-column="dateLastLogin" placeholder="YYYY-MM-DD..."></td>
+                <td><input type="text" class="column-filter" data-column="daysSinceLastLogin" placeholder="Min days..."></td>
+                <td><input type="text" class="column-filter" data-column="skills" placeholder="Filter skills..."></td>
+                <td></td>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+          <div id="paginationInfo" class="muted"></div>
+          <div>
+            <button id="prevPage" class="action-btn" disabled>Previous</button>
+            <button id="nextPage" class="action-btn" disabled>Next</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <div id="progressContainer" class="progress-container" style="display:none;">
-        <div class="progress-text">
-          <span id="progressStatus">Loading users...</span>
-          <span id="progressPercent">0%</span>
-        </div>
-        <div class="progress-bar">
-          <div id="progressFill" class="progress-fill" style="width: 0%"></div>
-        </div>
-        <div class="progress-text">
-          <span id="progressCount">0</span> of <span id="progressTotal">0</span> users loaded
-        </div>
-      </div>
-
-      <div class="action-buttons">
-        <button id="refreshData" class="action-btn">Refresh Data</button>
-        <button id="exportCSV" class="action-btn export-btn">Export to CSV</button>
-        <button id="clearFilters" class="action-btn" style="background: var(--danger);">Clear Filters</button>
-        <select id="pageSize" style="margin-left: auto; width: auto;">
-          <option value="25">25 per page</option>
-          <option value="50" selected>50 per page</option>
-          <option value="100">100 per page</option>
-          <option value="200">200 per page</option>
-        </select>
-      </div>
-
-      <div class="stats-bar" id="statsBar">
-        <div class="stat-item">
-          <span class="stat-value" id="totalUsers">0</span>
-          <span class="stat-label">Total Users</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="onlineUsers">0</span>
-          <span class="stat-label">Online</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="activeUsers">0</span>
-          <span class="stat-label">Active Today</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="awayUsers">0</span>
-          <span class="stat-label">Away</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="busyUsers">0</span>
-          <span class="stat-label">Busy</span>
+    <!-- Inactive Users Tab -->
+    <div id="inactive-users" class="tab-content">
+      <div class="filter-section card">
+        <h3>Find Inactive Users</h3>
+        
+        <div class="inactive-controls">
+          <div>
+            <label>Days Since Last Login (minimum)</label>
+            <input type="number" id="daysSinceLogin" class="days-input" min="1" value="30" placeholder="30">
+          </div>
+          <div>
+            <label>Date Range (optional)</label>
+            <div class="date-range-inputs">
+              <input type="date" id="dateFrom" placeholder="From date">
+              <span>to</span>
+              <input type="date" id="dateTo" placeholder="To date">
+            </div>
+          </div>
+          <div>
+            <label>Filter by Team</label>
+            <select id="inactiveTeamFilter">
+              <option value="">All Teams</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="findInactiveUsers" class="full-width-btn">Find Inactive Users</button>
+          </div>
         </div>
       </div>
 
-      <div class="table-container">
-        <table id="usersTable">
-          <thead>
-            <tr>
-              <th class="sortable" data-column="name">Name</th>
-              <th class="sortable" data-column="routingStatus.status">Status</th>
-              <th class="sortable" data-column="email">Email</th>
-              <th class="sortable" data-column="team.name">Team</th>
-              <th class="sortable" data-column="presence.presenceDefinition.systemPresence">Presence</th>
-              <th class="sortable" data-column="dateLastLogin">Last Login</th>
-              <th class="sortable" data-column="skills">Skills</th>
-              <th class="sortable" data-column="conversationSummary.totalConversationCount">Conv. Count</th>
-              <th>Actions</th>
-            </tr>
-            <tr class="filter-row">
-              <td><input type="text" class="column-filter" data-column="name" placeholder="Filter name..."></td>
-              <td><select class="column-filter" data-column="routingStatus.status">
-                <option value="">All</option>
-                <option value="IDLE">Idle</option>
-                <option value="INTERACTING">Interacting</option>
-                <option value="NOT_RESPONDING">Not Responding</option>
-                <option value="COMMUNICATING">Communicating</option>
-              </select></td>
-              <td><input type="text" class="column-filter" data-column="email" placeholder="Filter email..."></td>
-              <td><input type="text" class="column-filter" data-column="team.name" placeholder="Filter team..."></td>
-              <td><select class="column-filter" data-column="presence.presenceDefinition.systemPresence">
-                <option value="">All</option>
-                <option value="Available">Available</option>
-                <option value="Busy">Busy</option>
-                <option value="Away">Away</option>
-                <option value="Offline">Offline</option>
-                <option value="Idle">Idle</option>
-              </select></td>
-              <td><input type="text" class="column-filter" data-column="dateLastLogin" placeholder="YYYY-MM-DD..."></td>
-              <td><input type="text" class="column-filter" data-column="skills" placeholder="Filter skills..."></td>
-              <td><input type="text" class="column-filter" data-column="conversationSummary.totalConversationCount" placeholder="Min count..."></td>
-              <td></td>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <div class="card">
+        <div class="action-buttons">
+          <button id="exportInactiveCSV" class="action-btn export-btn">Export Inactive Users to CSV</button>
+        </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-        <div id="paginationInfo" class="muted"></div>
-        <div>
-          <button id="prevPage" class="action-btn" disabled>Previous</button>
-          <button id="nextPage" class="action-btn" disabled>Next</button>
+        <div class="stats-bar" id="inactiveStatsBar">
+          <div class="stat-item">
+            <span class="stat-value" id="totalInactiveUsers">0</span>
+            <span class="stat-label">Inactive Users</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="avgDaysInactive">0</span>
+            <span class="stat-label">Avg Days Inactive</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="maxDaysInactive">0</span>
+            <span class="stat-label">Max Days Inactive</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table id="inactiveUsersTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Team</th>
+                <th>Last Login</th>
+                <th>Days Since Login</th>
+                <th>Status</th>
+                <th>Queues</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -530,6 +696,7 @@
     let availableUsers = [];
     let availableTeams = [];
     let availableManagementUnits = [];
+    let userQueuesCache = new Map();
     
     let rateLimitRemaining = 100;
     let rateLimitResetTime = Date.now() + 60000;
@@ -541,6 +708,8 @@
     let filters = {};
     let globalSearch = '';
     let filteredUsers = [];
+    
+    let inactiveUsers = [];
     
     const MAX_PAGE_SIZE = 100;
     const REQUEST_DELAY = 200;
@@ -647,6 +816,7 @@
         createDropdowns();
         populateDropdownOptions();
         setupEventListeners();
+        setupTabs();
         showLoading(false);
 
       } catch (e) {
@@ -674,6 +844,16 @@
         } while (true);
         
         availableTeams = all;
+        
+        // Populate team filter for inactive users
+        const teamFilter = document.getElementById('inactiveTeamFilter');
+        availableTeams.forEach(team => {
+          const option = document.createElement('option');
+          option.value = team.id;
+          option.textContent = team.name;
+          teamFilter.appendChild(option);
+        });
+        
       } catch (error) {
         console.error('Error fetching teams:', error);
         showMessage('Error loading teams');
@@ -701,6 +881,26 @@
       } catch (error) {
         console.error('Error fetching management units:', error);
         showMessage('Error loading management units');
+      }
+    }
+
+    async function fetchUserQueues(userId) {
+      if (userQueuesCache.has(userId)) {
+        return userQueuesCache.get(userId);
+      }
+      
+      try {
+        const response = await rateLimitedFetch(
+          `https://api.mypurecloud.ie/api/v2/users/${userId}/queues?pageSize=50`
+        );
+        const data = await response.json();
+        const queues = data.entities || [];
+        const queueNames = queues.map(q => q.name).slice(0, 5); // Limit to 5 queues
+        userQueuesCache.set(userId, queueNames);
+        return queueNames;
+      } catch (error) {
+        console.error(`Error fetching queues for user ${userId}:`, error);
+        return [];
       }
     }
 
@@ -777,6 +977,25 @@
               u.name && u.name.trim() && u.name !== 'Unknown User'
             );
             
+            // Calculate days since last login for each user
+            validUsers.forEach(user => {
+              if (user.dateLastLogin) {
+                const lastLogin = new Date(user.dateLastLogin);
+                const today = new Date();
+                const diffTime = Math.abs(today - lastLogin);
+                user.daysSinceLastLogin = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              } else {
+                user.daysSinceLastLogin = 999; // Never logged in
+              }
+              
+              // Extract roles
+              if (user.authorization && user.authorization.roles) {
+                user.roles = user.authorization.roles.map(r => r.name).join(', ');
+              } else {
+                user.roles = '';
+              }
+            });
+            
             allUsers = allUsers.concat(validUsers);
             loadedCount += users.length;
             
@@ -836,12 +1055,11 @@
           return (
             (user.name && user.name.toLowerCase().includes(search)) ||
             (user.email && user.email.toLowerCase().includes(search)) ||
+            (user.roles && user.roles.toLowerCase().includes(search)) ||
             (user.skills && user.skills.some(skill => 
               skill.name && skill.name.toLowerCase().includes(search)
             )) ||
-            (user.team && user.team.name && user.team.name.toLowerCase().includes(search)) ||
-            (user.conversationSummary && 
-              String(user.conversationSummary.totalConversationCount).includes(search))
+            (user.team && user.team.name && user.team.name.toLowerCase().includes(search))
           );
         });
       }
@@ -866,8 +1084,10 @@
             return dateStr.includes(filterValue);
           }
           
-          if (column.includes('Count') || column.includes('count')) {
-            return String(value).includes(filterValue);
+          if (column.includes('daysSinceLastLogin')) {
+            const days = parseInt(value) || 0;
+            const filterDays = parseInt(filterValue) || 0;
+            return days >= filterDays;
           }
           
           return String(value).toLowerCase().includes(filterValue);
@@ -922,7 +1142,7 @@
           valB = valB ? new Date(valB).getTime() : 0;
         }
         
-        if (sortColumn.includes('Count') || sortColumn.includes('count')) {
+        if (sortColumn === 'daysSinceLastLogin') {
           valA = Number(valA) || 0;
           valB = Number(valB) || 0;
         }
@@ -938,21 +1158,25 @@
       });
     }
 
-    function renderTable() {
+    async function renderTable() {
       const tbody = document.querySelector('#usersTable tbody');
       const start = (currentPage - 1) * pageSize;
       const end = start + pageSize;
       const pageUsers = sortUsers([...filteredUsers]).slice(start, end);
       
       if (pageUsers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-light)">
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-light)">
           No users found. Try adjusting your filters or click "Load Users".
         </td></tr>`;
         updatePaginationInfo(0, 0);
         return;
       }
       
-      tbody.innerHTML = pageUsers.map(user => {
+      // Fetch queues for all users on the page
+      const queuePromises = pageUsers.map(user => fetchUserQueues(user.id));
+      const queuesList = await Promise.all(queuePromises);
+      
+      tbody.innerHTML = pageUsers.map((user, index) => {
         const status = user.routingStatus?.status || 'UNKNOWN';
         const presence = user.presence?.presenceDefinition?.systemPresence || 'Offline';
         const team = user.team?.name || 'Unassigned';
@@ -961,7 +1185,9 @@
           new Date(user.dateLastLogin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
           : 'Never';
         const skills = user.skills?.map(s => s.name).slice(0, 3).join(', ') || 'None';
-        const convCount = user.conversationSummary?.totalConversationCount || 0;
+        const daysSinceLogin = user.daysSinceLastLogin || 0;
+        const roles = user.roles || 'No role';
+        const userQueues = queuesList[index] || [];
         
         let statusClass = 'status-offline';
         if (presence === 'Available') statusClass = 'status-online';
@@ -969,27 +1195,29 @@
         else if (presence === 'Away') statusClass = 'status-away';
         else if (presence === 'Idle') statusClass = 'status-idle';
         
+        let daysClass = '';
+        if (daysSinceLogin > 30) daysClass = 'style="color: var(--danger); font-weight: bold;"';
+        else if (daysSinceLogin > 7) daysClass = 'style="color: var(--warning);"';
+        
         return `
           <tr>
-            <td>
-              <strong>${user.name || 'Unknown'}</strong><br>
-              <small class="muted">${user.email || 'No email'}</small>
-            </td>
+            <td><strong>${user.name || 'Unknown'}</strong></td>
+            <td>${user.email || 'No email'}</td>
+            <td title="${user.roles}">${roles.length > 30 ? roles.substring(0, 30) + '...' : roles}</td>
             <td>
               <span class="status-badge ${statusClass}">${presence}</span><br>
               <small class="muted">${status}</small>
             </td>
-            <td>${user.email || 'No email'}</td>
             <td>${team}</td>
             <td>${presence}</td>
             <td>${lastLogin}</td>
+            <td style="text-align:center;" ${daysClass}>${daysSinceLogin === 999 ? 'Never' : daysSinceLogin}</td>
             <td title="${user.skills?.map(s => s.name).join(', ') || 'None'}">${skills}${user.skills?.length > 3 ? '...' : ''}</td>
-            <td style="text-align:center;">${convCount}</td>
             <td>
-              <button onclick="viewUserDetails('${user.id}')" 
-                      style="font-size:12px;padding:4px 8px;margin-bottom:4px;width:100%;">
-                View Details
-              </button>
+              <div class="queues-list" title="${userQueues.join(', ')}">
+                ${userQueues.map(queue => `<span>${queue}</span>`).join('')}
+                ${userQueues.length === 0 ? 'None' : ''}
+              </div>
             </td>
           </tr>
         `;
@@ -1191,8 +1419,154 @@
       managementUnitDropdown.setOptions(muOpts);
     }
 
+    function setupTabs() {
+      const tabs = document.querySelectorAll('.tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs and contents
+          tabs.forEach(t => t.classList.remove('active'));
+          tabContents.forEach(c => c.classList.remove('active'));
+          
+          // Add active class to clicked tab and corresponding content
+          tab.classList.add('active');
+          const tabId = tab.dataset.tab;
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
+    }
+
+    async function findInactiveUsers() {
+      if (availableUsers.length === 0) {
+        showMessage('Please load users first', 'warning');
+        return;
+      }
+      
+      const daysSinceLogin = parseInt(document.getElementById('daysSinceLogin').value) || 30;
+      const dateFrom = document.getElementById('dateFrom').value;
+      const dateTo = document.getElementById('dateTo').value;
+      const teamFilter = document.getElementById('inactiveTeamFilter').value;
+      
+      let filteredInactive = availableUsers.filter(user => {
+        // Filter by days since login
+        if (user.daysSinceLastLogin < daysSinceLogin) {
+          return false;
+        }
+        
+        // Filter by date range if specified
+        if (dateFrom && user.dateLastLogin) {
+          const lastLogin = new Date(user.dateLastLogin);
+          const fromDate = new Date(dateFrom);
+          if (lastLogin < fromDate) {
+            return false;
+          }
+        }
+        
+        if (dateTo && user.dateLastLogin) {
+          const lastLogin = new Date(user.dateLastLogin);
+          const toDate = new Date(dateTo);
+          if (lastLogin > toDate) {
+            return false;
+          }
+        }
+        
+        // Filter by team if specified
+        if (teamFilter && user.team && user.team.id !== teamFilter) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      // Sort by days since login (descending)
+      filteredInactive.sort((a, b) => b.daysSinceLastLogin - a.daysSinceLastLogin);
+      
+      inactiveUsers = filteredInactive;
+      renderInactiveUsersTable();
+      updateInactiveStats();
+      
+      showMessage(`Found ${inactiveUsers.length} inactive users`, 'success');
+    }
+
+    async function renderInactiveUsersTable() {
+      const tbody = document.querySelector('#inactiveUsersTable tbody');
+      
+      if (inactiveUsers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-light)">
+          No inactive users found. Adjust your criteria and try again.
+        </td></tr>`;
+        return;
+      }
+      
+      // Fetch queues for inactive users (limit to first 50 for performance)
+      const usersToFetch = inactiveUsers.slice(0, 50);
+      const queuePromises = usersToFetch.map(user => fetchUserQueues(user.id));
+      const queuesList = await Promise.all(queuePromises);
+      
+      tbody.innerHTML = inactiveUsers.map((user, index) => {
+        const status = user.routingStatus?.status || 'UNKNOWN';
+        const presence = user.presence?.presenceDefinition?.systemPresence || 'Offline';
+        const team = user.team?.name || 'Unassigned';
+        const lastLogin = user.dateLastLogin ? 
+          new Date(user.dateLastLogin).toLocaleDateString() + ' ' + 
+          new Date(user.dateLastLogin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+          : 'Never';
+        const daysSinceLogin = user.daysSinceLastLogin || 0;
+        const roles = user.roles || 'No role';
+        const userQueues = index < queuesList.length ? queuesList[index] : [];
+        
+        let statusClass = 'status-offline';
+        if (presence === 'Available') statusClass = 'status-online';
+        else if (presence === 'Busy') statusClass = 'status-busy';
+        else if (presence === 'Away') statusClass = 'status-away';
+        else if (presence === 'Idle') statusClass = 'status-idle';
+        
+        let daysClass = '';
+        if (daysSinceLogin > 30) daysClass = 'style="color: var(--danger); font-weight: bold;"';
+        else if (daysSinceLogin > 7) daysClass = 'style="color: var(--warning);"';
+        
+        return `
+          <tr>
+            <td><strong>${user.name || 'Unknown'}</strong></td>
+            <td>${user.email || 'No email'}</td>
+            <td title="${user.roles}">${roles.length > 30 ? roles.substring(0, 30) + '...' : roles}</td>
+            <td>${team}</td>
+            <td>${lastLogin}</td>
+            <td style="text-align:center;" ${daysClass}>${daysSinceLogin === 999 ? 'Never' : daysSinceLogin}</td>
+            <td><span class="status-badge ${statusClass}">${presence}</span></td>
+            <td>
+              <div class="queues-list" title="${userQueues.join(', ')}">
+                ${userQueues.map(queue => `<span>${queue}</span>`).join('')}
+                ${userQueues.length === 0 ? 'None' : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateInactiveStats() {
+      if (inactiveUsers.length === 0) {
+        document.getElementById('totalInactiveUsers').textContent = '0';
+        document.getElementById('avgDaysInactive').textContent = '0';
+        document.getElementById('maxDaysInactive').textContent = '0';
+        return;
+      }
+      
+      const total = inactiveUsers.length;
+      const avgDays = Math.round(inactiveUsers.reduce((sum, user) => sum + user.daysSinceLastLogin, 0) / total);
+      const maxDays = Math.max(...inactiveUsers.map(user => user.daysSinceLastLogin));
+      
+      document.getElementById('totalInactiveUsers').textContent = total;
+      document.getElementById('avgDaysInactive').textContent = avgDays;
+      document.getElementById('maxDaysInactive').textContent = maxDays;
+    }
+
     function setupEventListeners() {
       document.getElementById('fetchUsers').addEventListener('click', fetchUsers);
+      
+      document.getElementById('findInactiveUsers').addEventListener('click', findInactiveUsers);
       
       document.getElementById('refreshData').addEventListener('click', async () => {
         if (availableUsers.length === 0) {
@@ -1205,6 +1579,8 @@
       });
       
       document.getElementById('exportCSV').addEventListener('click', exportToCSV);
+      
+      document.getElementById('exportInactiveCSV').addEventListener('click', exportInactiveToCSV);
       
       document.getElementById('clearFilters').addEventListener('click', clearFilters);
       
@@ -1274,19 +1650,21 @@
       }
       
       const headers = [
-        'Name', 'Email', 'Status', 'Presence', 'Team', 
-        'Last Login', 'Skills', 'Conversation Count', 'User ID'
+        'Name', 'Email', 'Role', 'Status', 'Team', 'Presence',
+        'Last Login', 'Days Since Login', 'Skills', 'Queues', 'User ID'
       ];
       
       const data = filteredUsers.map(user => [
         user.name || '',
         user.email || '',
+        user.roles || '',
         user.routingStatus?.status || '',
-        user.presence?.presenceDefinition?.systemPresence || '',
         user.team?.name || '',
+        user.presence?.presenceDefinition?.systemPresence || '',
         user.dateLastLogin ? new Date(user.dateLastLogin).toISOString() : '',
+        user.daysSinceLastLogin || 0,
         user.skills?.map(s => s.name).join('; ') || '',
-        user.conversationSummary?.totalConversationCount || 0,
+        '', // Queues would need to be fetched separately for export
         user.id || ''
       ]);
       
@@ -1308,6 +1686,46 @@
       showMessage(`Exported ${filteredUsers.length} users to CSV`, 'success');
     }
 
+    function exportInactiveToCSV() {
+      if (inactiveUsers.length === 0) {
+        showMessage('No inactive users to export', 'info');
+        return;
+      }
+      
+      const headers = [
+        'Name', 'Email', 'Role', 'Team', 'Last Login', 
+        'Days Since Login', 'Status', 'User ID'
+      ];
+      
+      const data = inactiveUsers.map(user => [
+        user.name || '',
+        user.email || '',
+        user.roles || '',
+        user.team?.name || '',
+        user.dateLastLogin ? new Date(user.dateLastLogin).toISOString() : '',
+        user.daysSinceLastLogin || 0,
+        user.presence?.presenceDefinition?.systemPresence || '',
+        user.id || ''
+      ]);
+      
+      const csvContent = [
+        headers.join(','),
+        ...data.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `inactive_users_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showMessage(`Exported ${inactiveUsers.length} inactive users to CSV`, 'success');
+    }
+
     function clearFilters() {
       filters = {};
       globalSearch = '';
@@ -1324,48 +1742,6 @@
       applyFilters();
       renderTable();
       showMessage('All filters cleared', 'success');
-    }
-
-    function viewUserDetails(userId) {
-      const user = availableUsers.find(u => u.id === userId);
-      if (!user) {
-        showMessage('User not found', 'error');
-        return;
-      }
-      
-      const details = `
-        <div style="font-family: monospace; padding: 20px; max-width: 800px;">
-          <h2>${user.name || 'Unknown User'}</h2>
-          <hr>
-          <h3>Basic Info</h3>
-          <p><strong>Email:</strong> ${user.email || 'N/A'}</p>
-          <p><strong>ID:</strong> ${user.id || 'N/A'}</p>
-          <p><strong>Last Login:</strong> ${user.dateLastLogin ? new Date(user.dateLastLogin).toLocaleString() : 'Never'}</p>
-          
-          <h3>Status & Presence</h3>
-          <p><strong>Status:</strong> ${user.routingStatus?.status || 'N/A'}</p>
-          <p><strong>Presence:</strong> ${user.presence?.presenceDefinition?.systemPresence || 'N/A'}</p>
-          
-          <h3>Team & Organization</h3>
-          <p><strong>Team:</strong> ${user.team?.name || 'Unassigned'}</p>
-          
-          <h3>Skills & Certifications</h3>
-          <p><strong>Skills:</strong> ${user.skills?.map(s => s.name).join(', ') || 'None'}</p>
-          <p><strong>Certifications:</strong> ${user.certifications?.map(c => c.name).join(', ') || 'None'}</p>
-          
-          <h3>Conversation Summary</h3>
-          <p><strong>Total Conversations:</strong> ${user.conversationSummary?.totalConversationCount || 0}</p>
-          
-          <h3>Full JSON</h3>
-          <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 400px; overflow: auto;">
-${JSON.stringify(user, null, 2)}
-          </pre>
-        </div>
-      `;
-      
-      const win = window.open('', '_blank');
-      win.document.write(details);
-      win.document.title = `${user.name || 'User'} Details`;
     }
 
     function showLoading(show) {
