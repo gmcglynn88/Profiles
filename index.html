@@ -1614,6 +1614,7 @@
         const progressContainer = document.getElementById('progressContainer');
         progressContainer.style.display = 'block';
         
+        // Updated expand fields to include ALL fields from the column list
         const expandFields = [
           'routingStatus',
           'presence',
@@ -1625,6 +1626,7 @@
           'authorization',
           'lasttokenissued',
           'authorization.unusedRoles',
+          'authorization.permissionPolicies',
           'team',
           'workPlanBidRanks',
           'externalContactsSettings',
@@ -1638,7 +1640,12 @@
           'employerInfo',
           'biography',
           'dateLastLogin',
-          'dateWelcomeSent'
+          'dateWelcomeSent',
+          'division',
+          'addresses',
+          'primaryContactInfo',
+          'locations',
+          'manager'
         ].join(',');
 
         let allUsers = [];
@@ -1674,6 +1681,7 @@
             );
             
             validUsers.forEach(user => {
+              // Calculate days since last login
               if (user.dateLastLogin) {
                 const lastLogin = new Date(user.dateLastLogin);
                 const today = new Date();
@@ -1683,10 +1691,111 @@
                 user.daysSinceLastLogin = 999;
               }
               
+              // Extract roles names
               if (user.authorization && user.authorization.roles) {
                 user.roles = user.authorization.roles.map(r => r.name);
               } else {
                 user.roles = [];
+              }
+              
+              // Extract skill names and other skill data
+              if (user.skills) {
+                user.skillIds = user.skills.map(s => s.id);
+                user.skillNames = user.skills.map(s => s.name);
+                user.skillProficiencies = user.skills.map(s => s.proficiency || 0);
+                user.skillStates = user.skills.map(s => s.state || '');
+              }
+              
+              // Extract group IDs
+              if (user.groups) {
+                user.groupIds = user.groups.map(g => g.id);
+              }
+              
+              // Extract work plan bid rank IDs
+              if (user.workPlanBidRanks) {
+                user.workPlanBidRankIds = user.workPlanBidRanks.map(w => w.id);
+              }
+              
+              // Extract certification names
+              if (user.certifications) {
+                user.certificationNames = user.certifications.map(c => c.name || c);
+              }
+              
+              // Extract profile skill names
+              if (user.profileSkills) {
+                user.profileSkillNames = user.profileSkills.map(p => p.name || p);
+              }
+              
+              // Extract language names
+              if (user.languages) {
+                user.languageNames = user.languages.map(l => l.name || l);
+              }
+              
+              // Handle date fields
+              if (user.employerInfo && user.employerInfo.dateHire) {
+                user.employerInfo.dateHire = new Date(user.employerInfo.dateHire).toISOString();
+              }
+              
+              if (user.lastTokenIssued && user.lastTokenIssued.dateIssued) {
+                user.lastTokenIssued.dateIssued = new Date(user.lastTokenIssued.dateIssued).toISOString();
+              }
+              
+              // Format presence data
+              if (user.presence && user.presence.presenceDefinition) {
+                user.presenceDefinitionId = user.presence.presenceDefinition.id;
+                user.systemPresence = user.presence.presenceDefinition.systemPresence;
+              }
+              
+              // Format routing status
+              if (user.routingStatus && user.routingStatus.startTime) {
+                user.routingStatus.startTime = new Date(user.routingStatus.startTime).toISOString();
+              }
+              
+              if (user.presence && user.presence.modifiedDate) {
+                user.presence.modifiedDate = new Date(user.presence.modifiedDate).toISOString();
+              }
+              
+              // Handle addresses array
+              if (user.addresses && Array.isArray(user.addresses)) {
+                // Take the first address if available
+                if (user.addresses.length > 0) {
+                  const primaryAddress = user.addresses[0];
+                  user.address = primaryAddress.address || '';
+                  user.addressDisplay = primaryAddress.display || '';
+                  user.addressMediaType = primaryAddress.mediaType || '';
+                  user.addressType = primaryAddress.type || '';
+                  user.addressExtension = primaryAddress.extension || '';
+                  user.addressCountryCode = primaryAddress.countryCode || '';
+                }
+              }
+              
+              // Handle primary contact info
+              if (user.primaryContactInfo) {
+                user.primaryAddress = user.primaryContactInfo.address || '';
+                user.primaryMediaType = user.primaryContactInfo.mediaType || '';
+                user.primaryType = user.primaryContactInfo.type || '';
+              }
+              
+              // Extract permission policies data
+              if (user.authorization && user.authorization.permissionPolicies) {
+                if (Array.isArray(user.authorization.permissionPolicies) && user.authorization.permissionPolicies.length > 0) {
+                  const policy = user.authorization.permissionPolicies[0];
+                  user.permissionDomain = policy.domain || '';
+                  user.permissionEntityName = policy.entityName || '';
+                  user.permissionAllowConditions = policy.allowConditions || false;
+                  user.permissionActionSet = policy.actionSet || [];
+                }
+              }
+              
+              // Extract permissions
+              if (user.authorization && user.authorization.permissions) {
+                user.permissions = user.authorization.permissions || [];
+              }
+              
+              // Extract unused roles
+              if (user.authorization && user.authorization.unusedRoles) {
+                user.unusedRoleIds = user.authorization.unusedRoles.map(r => r.id);
+                user.unusedRoleNames = user.authorization.unusedRoles.map(r => r.name);
               }
             });
             
@@ -1893,10 +2002,10 @@
         roleName,
         user.routingStatus?.status || '',
         user.team?.name || '',
-        user.presence?.presenceDefinition?.systemPresence || '',
+        user.presence?.presenceDefinition?.systemPresence || user.systemPresence || '',
         user.dateLastLogin ? new Date(user.dateLastLogin).toISOString() : '',
         user.daysSinceLastLogin || 0,
-        user.skills?.map(s => s.name).join('; ') || '',
+        user.skillNames?.join('; ') || user.skills?.map(s => s.name).join('; ') || '',
         user.id || ''
       ]);
       
@@ -2176,7 +2285,7 @@
           let cellValue = getNestedValue(user, columnId);
           
           if (columnId === 'skills.name') {
-            const skills = user.skills?.map(s => s.name) || [];
+            const skills = user.skillNames || user.skills?.map(s => s.name) || [];
             return `
               <td>
                 <div class="skills-list" title="${skills.join(', ') || 'None'}">
@@ -2216,7 +2325,7 @@
           
           if (columnId === 'routingStatus.status') {
             const status = cellValue || 'UNKNOWN';
-            const presence = user.presence?.presenceDefinition?.systemPresence || 'Offline';
+            const presence = user.presence?.presenceDefinition?.systemPresence || user.systemPresence || 'Offline';
             const statusClass = getStatusClass(presence);
             return `
               <td>
@@ -2227,7 +2336,7 @@
           }
           
           if (columnId === 'presence.presenceDefinition.systemPresence') {
-            const presence = cellValue || 'Offline';
+            const presence = cellValue || user.systemPresence || 'Offline';
             const statusClass = getStatusClass(presence);
             return `<td><span class="status-badge ${statusClass}">${presence}</span></td>`;
           }
@@ -2262,12 +2371,145 @@
             return `<td><small style="color: var(--text-light);">${cellValue || ''}</small></td>`;
           }
           
+          // Date formatting for various date fields
+          if (columnId === 'employerInfo.dateHire' || 
+              columnId === 'lastTokenIssued.dateIssued' ||
+              columnId === 'routingStatus.startTime' ||
+              columnId === 'presence.modifiedDate' ||
+              columnId === 'dateWelcomeSent') {
+            if (!cellValue) return `<td></td>`;
+            try {
+              const date = new Date(cellValue);
+              return `<td>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>`;
+            } catch (e) {
+              return `<td>${cellValue || ''}</td>`;
+            }
+          }
+          
+          // Handle boolean fields
+          if (columnId === 'outOfOffice.active' || 
+              columnId === 'outOfOffice.indefinite' ||
+              columnId === 'acdAutoAnswer' ||
+              columnId === 'externalContactsSettings.manuallyAssignDivisionsToInteractions' ||
+              columnId === 'externalContactsSettings.manuallyAssignDivisionsToContacts' ||
+              columnId === 'authorization.permissionPolicies.allowConditions') {
+            if (cellValue === true) return `<td style="text-align:center;"><span style="color:green;">✓</span></td>`;
+            if (cellValue === false) return `<td style="text-align:center;"><span style="color:red;">✗</span></td>`;
+            return `<td></td>`;
+          }
+          
+          // Handle arrays
+          if (columnId === 'certifications' || 
+              columnId === 'profileSkills' ||
+              columnId === 'languages' ||
+              columnId === 'authorization.permissions' ||
+              columnId === 'authorization.permissionPolicies.actionSet') {
+            const arrayValue = Array.isArray(cellValue) ? cellValue : [];
+            if (arrayValue.length === 0) return `<td></td>`;
+            return `<td title="${arrayValue.join(', ')}">${arrayValue.slice(0, 3).join(', ')}${arrayValue.length > 3 ? '...' : ''}</td>`;
+          }
+          
+          // Handle specific array columns that were extracted
+          if (columnId === 'skills.id') {
+            const skills = user.skillIds || [];
+            return `<td title="${skills.join(', ')}">${skills.slice(0, 3).join(', ')}${skills.length > 3 ? '...' : ''}</td>`;
+          }
+          
+          if (columnId === 'skills.proficiency') {
+            const proficiencies = user.skillProficiencies || [];
+            return `<td>${proficiencies.join(', ')}</td>`;
+          }
+          
+          if (columnId === 'skills.state') {
+            const states = user.skillStates || [];
+            return `<td>${states.join(', ')}</td>`;
+          }
+          
+          if (columnId === 'groups.id') {
+            const groups = user.groupIds || [];
+            return `<td title="${groups.join(', ')}">${groups.slice(0, 3).join(', ')}${groups.length > 3 ? '...' : ''}</td>`;
+          }
+          
+          if (columnId === 'workPlanBidRanks.id') {
+            const ranks = user.workPlanBidRankIds || [];
+            return `<td title="${ranks.join(', ')}">${ranks.slice(0, 3).join(', ')}${ranks.length > 3 ? '...' : ''}</td>`;
+          }
+          
+          if (columnId === 'authorization.unusedRoles.id') {
+            const unusedRoles = user.unusedRoleIds || [];
+            return `<td title="${unusedRoles.join(', ')}">${unusedRoles.slice(0, 3).join(', ')}${unusedRoles.length > 3 ? '...' : ''}</td>`;
+          }
+          
+          if (columnId === 'authorization.unusedRoles.name') {
+            const unusedRoles = user.unusedRoleNames || [];
+            return `<td title="${unusedRoles.join(', ')}">${unusedRoles.slice(0, 3).join(', ')}${unusedRoles.length > 3 ? '...' : ''}</td>`;
+          }
+          
+          // Handle address fields
+          if (columnId === 'addresses.address') {
+            return `<td>${user.address || ''}</td>`;
+          }
+          
+          if (columnId === 'addresses.display') {
+            return `<td>${user.addressDisplay || ''}</td>`;
+          }
+          
+          if (columnId === 'addresses.mediaType') {
+            return `<td>${user.addressMediaType || ''}</td>`;
+          }
+          
+          if (columnId === 'addresses.type') {
+            return `<td>${user.addressType || ''}</td>`;
+          }
+          
+          if (columnId === 'addresses.extension') {
+            return `<td>${user.addressExtension || ''}</td>`;
+          }
+          
+          if (columnId === 'addresses.countryCode') {
+            return `<td>${user.addressCountryCode || ''}</td>`;
+          }
+          
+          // Handle primary contact info
+          if (columnId === 'primaryContactInfo.address') {
+            return `<td>${user.primaryAddress || ''}</td>`;
+          }
+          
+          if (columnId === 'primaryContactInfo.mediaType') {
+            return `<td>${user.primaryMediaType || ''}</td>`;
+          }
+          
+          if (columnId === 'primaryContactInfo.type') {
+            return `<td>${user.primaryType || ''}</td>`;
+          }
+          
+          // Handle permission policies
+          if (columnId === 'authorization.permissionPolicies.domain') {
+            return `<td>${user.permissionDomain || ''}</td>`;
+          }
+          
+          if (columnId === 'authorization.permissionPolicies.entityName') {
+            return `<td>${user.permissionEntityName || ''}</td>`;
+          }
+          
+          // Handle manager
+          if (columnId === 'manager') {
+            if (typeof cellValue === 'object' && cellValue !== null) {
+              return `<td>${cellValue.name || JSON.stringify(cellValue)}</td>`;
+            }
+            return `<td>${cellValue || ''}</td>`;
+          }
+          
           if (Array.isArray(cellValue)) {
-            return `<td>${cellValue.join(', ') || ''}</td>`;
+            return `<td title="${cellValue.join(', ')}">${cellValue.slice(0, 3).join(', ')}${cellValue.length > 3 ? '...' : ''}</td>`;
           }
           
           if (typeof cellValue === 'object' && cellValue !== null) {
-            return `<td>${JSON.stringify(cellValue)}</td>`;
+            try {
+              return `<td title="${JSON.stringify(cellValue)}">${JSON.stringify(cellValue).slice(0, 50)}${JSON.stringify(cellValue).length > 50 ? '...' : ''}</td>`;
+            } catch (e) {
+              return `<td>[Object]</td>`;
+            }
           }
           
           return `<td>${cellValue || ''}</td>`;
@@ -2826,7 +3068,7 @@
       
       tbody.innerHTML = inactiveUsers.map((user, index) => {
         const status = user.routingStatus?.status || 'UNKNOWN';
-        const presence = user.presence?.presenceDefinition?.systemPresence || 'Offline';
+        const presence = user.presence?.presenceDefinition?.systemPresence || user.systemPresence || 'Offline';
         const team = user.team?.name || 'Unassigned';
         const lastLogin = user.dateLastLogin ? 
           new Date(user.dateLastLogin).toLocaleDateString() + ' ' + 
@@ -3043,7 +3285,7 @@
           let value = getNestedValue(user, columnId);
           
           if (columnId === 'skills.name') {
-            const skills = user.skills?.map(s => s.name) || [];
+            const skills = user.skillNames || user.skills?.map(s => s.name) || [];
             return skills.join('; ');
           }
           
@@ -3054,6 +3296,18 @@
           
           if (columnId === 'dateLastLogin' && value) {
             return new Date(value).toISOString();
+          }
+          
+          // Handle date fields in CSV export
+          if (columnId === 'employerInfo.dateHire' || 
+              columnId === 'lastTokenIssued.dateIssued' ||
+              columnId === 'routingStatus.startTime' ||
+              columnId === 'presence.modifiedDate' ||
+              columnId === 'dateWelcomeSent') {
+            if (value) {
+              return new Date(value).toISOString();
+            }
+            return '';
           }
           
           if (Array.isArray(value)) {
@@ -3108,7 +3362,7 @@
         user.team?.name || '',
         user.dateLastLogin ? new Date(user.dateLastLogin).toISOString() : '',
         user.daysSinceLastLogin || 0,
-        user.presence?.presenceDefinition?.systemPresence || '',
+        user.presence?.presenceDefinition?.systemPresence || user.systemPresence || '',
         user.id || ''
       ]);
       
